@@ -6,10 +6,13 @@ This is the HPC development version of HAIL-CAESAR arrived at by porting the cod
 
 To build the HPC version of HAIL-CAESAR you will need the following installed:
 
-o an MPI library (e.g. MPICH, OpenMPI, ...)
-o Boost
-o LibGeoDecomp (currently the hail-caesar branch, available from https://github.com/aproeme/libgeodecomp)
-o g++ (more recent than version 6)
+- g++ (more recent than version 6)
+- an MPI library (e.g. MPICH, OpenMPI, ...)
+- Boost
+- LibGeoDecomp (currently the hail-caesar branch, available from https://github.com/aproeme/libgeodecomp)
+- ruby
+- doxygen
+
 
 # Building
 
