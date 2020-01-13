@@ -1,0 +1,9 @@
+# FILE INFORMATION
+#=================
+read_fname:                    flat      # TOP-LAYER DEM NAME, NO EXTENSION PLEASE
+dem_read_extension:            asc                    # OPTIONS ARE ASC OR NOWT
+read_path:                     /Users/aproeme/hail-caesar-runs/parallel-synthetic/flat
+write_path:                    /Users/aproeme/hail-caesar-runs/parallel-synthetic/flat
+
+
+
