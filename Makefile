@@ -75,7 +75,7 @@ print_build_mode:
 
 clean:
 	@echo " Cleaning..."; 
-	@echo " $(RM) -rf $(BUILDDIR) $(TARGET) typemaps"; $(RM) -r $(BUILDDIR) $(TARGET) typemaps
+	@echo " $(RM) -rf $(BUILDDIR) $(TARGET) typemaps typemaps-doxygen-docs"; $(RM) -r $(BUILDDIR) $(TARGET) typemaps typemaps-doxygen-docs
 
 # Tests
 tester:
