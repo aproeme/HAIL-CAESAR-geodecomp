@@ -740,7 +740,7 @@ void Cell::depth_update(const COORD_MAP& neighborhood)
 template<typename COORD_MAP>
 void Cell::update_water_depth(const COORD_MAP& neighborhood, double east_qx, double south_qy, double local_time_factor)
 {
-  water_depth = THIS_CELL.water_depth + local_time_factor * ( (east_qx - THIS_CELL.qx)/LSDCatchmentModel::DX + (south_qy - THIS_CELL.qy)/LSDCatchmentModel::DY );
+  water_depth = 0.001 + THIS_CELL.water_depth + local_time_factor * ( (east_qx - THIS_CELL.qx)/LSDCatchmentModel::DX + (south_qy - THIS_CELL.qy)/LSDCatchmentModel::DY );
 }
 
 
@@ -1343,10 +1343,36 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
     
     
     // Visualisation
+    else if (lower == "write_elevation_ppm")
+      {
+	LSDCatchmentModel::write_elevation_ppm = (value == "yes") ? true : false;
+      }
     else if (lower == "write_water_depth_ppm")
       {
 	LSDCatchmentModel::write_water_depth_ppm = (value == "yes") ? true : false;
       }
+    else if (lower == "water_depth_ppm_interval")
+      {
+	LSDCatchmentModel::water_depth_ppm_interval = atoi(value.c_str());
+      }
+    else if (lower == "write_water_depth_bov")
+      {
+	LSDCatchmentModel::write_water_depth_bov = (value == "yes") ? true : false;
+      }
+    else if (lower == "water_depth_bov_interval")
+      {
+	LSDCatchmentModel::water_depth_bov_interval = atoi(value.c_str());
+      }
+    else if (lower == "write_water_depth_visit")
+      {
+	LSDCatchmentModel::write_water_depth_visit = (value == "yes") ? true : false;
+      }
+    else if (lower == "water_depth_visit_interval")
+      {
+	LSDCatchmentModel::water_depth_visit_interval = atoi(value.c_str());
+      }
+
+
     
   }
 
@@ -1421,7 +1447,7 @@ void runSimulation(std::string pname, std::string pfname)
 	{
 	  system("mkdir -p elevation/ppm");
 	  elevationPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::elevation, 0.0, 255.0, "elevation/ppm/elevation", \
-								 catchment->elevation_ppm_interval, LibGeoDecomp::Coord<2>(20, 20));
+								 catchment->elevation_ppm_interval, LibGeoDecomp::Coord<2>(catchment->pixels_per_cell, catchment->pixels_per_cell));
 	}
     }
   if(catchment->write_water_depth_ppm)
@@ -1430,14 +1456,19 @@ void runSimulation(std::string pname, std::string pfname)
 	{
 	  system("mkdir -p water_depth/ppm");
 	  water_depthPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::water_depth, 0.0, 1.0, "water_depth/ppm/water_depth", \
-								   catchment->water_depth_ppm_interval, LibGeoDecomp::Coord<2>(20, 20));
+								   catchment->water_depth_ppm_interval, LibGeoDecomp::Coord<2>(catchment->pixels_per_cell, catchment->pixels_per_cell));
 	}
       LibGeoDecomp::CollectingWriter<Cell> *water_depthPPMCollectingWriter = new LibGeoDecomp::CollectingWriter<Cell>(water_depthPPMWriter);
       sim.addWriter(water_depthPPMCollectingWriter);
     }
+  if(catchment->write_water_depth_bov)
+    {
+      system("mkdir -p water_depth/bov");
+      sim.addWriter(new LibGeoDecomp::BOVWriter<Cell>(LibGeoDecomp::Selector<Cell>(&Cell::water_depth, "water_depth"), "water_depth/bov/water_depth", \
+						      catchment->water_depth_bov_interval));
+    }
   
-  //sim.addWriter(new LibGeoDecomp::BOVWriter<Cell>(LibGeoDecomp::Selector<Cell>(&Cell::elevation, "elevation"), "elevation", outputFrequency));
-  //sim.addWriter(new LibGeoDecomp::BOVWriter<Cell>(LibGeoDecomp::Selector<Cell>(&Cell::water_depth, "water_depth"), "water_depth", outputFrequency));
+  
   
   if (LibGeoDecomp::MPILayer().rank() == 0){ sim.addWriter(new LibGeoDecomp::TracingWriter<Cell>(1, catchment->no_of_iterations)); }
   
