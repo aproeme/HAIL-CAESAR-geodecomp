@@ -60,8 +60,11 @@ void LSDCatchmentModel::create()
 void LSDCatchmentModel::create(string pname, string pfname)
 {
   LSDCatchmentModel::initialise_variables(pname, pfname);
-  std::cout << "The user-defined parameters have been"
-            << " ingested from the param file." << std::endl;
+  if(LibGeoDecomp::MPILayer().rank() == 0)
+    {
+      std::cout << "The user-defined parameters have been"
+		<< " ingested from the param file." << std::endl;
+    }
 }
 
 
@@ -93,7 +96,7 @@ Cell::Cell(Cell::CellType celltype_in = INTERNAL,	\
 #ifdef COMPILE_FOR_PARALLEL
 
 template<typename Cell>
-class LibGeoDecomp::APITraits::SelectMPIDataType<Cell>  // Needed to be defined by StripingSimulator
+class LibGeoDecomp::APITraits::SelectMPIDataType<Cell>  
 {
 public:
   static inline MPI_Datatype value()
@@ -195,12 +198,11 @@ void Cell::catchment_water_input_and_hydrology(const COORD_MAP& neighborhood, do
       
   */
 	
-  //water_depth += water_add_amt;
-  water_depth += 10.0;
-
+  //water_depth = THIS_CELL.water_depth;
+  
       /*
-    }
-  */
+	}
+      */
   
   // if the input type flag is 1 then the discharge is input from the hydrograph
   /*  if (cycle >= time_1)
@@ -738,8 +740,7 @@ void Cell::depth_update(const COORD_MAP& neighborhood)
 template<typename COORD_MAP>
 void Cell::update_water_depth(const COORD_MAP& neighborhood, double east_qx, double south_qy, double local_time_factor)
 {
-  // artificial rainfall
-  water_depth = 0.005 + THIS_CELL.water_depth + local_time_factor * ( (east_qx - THIS_CELL.qx)/LSDCatchmentModel::DX + (south_qy - THIS_CELL.qy)/LSDCatchmentModel::DY );
+  water_depth = THIS_CELL.water_depth + local_time_factor * ( (east_qx - THIS_CELL.qx)/LSDCatchmentModel::DX + (south_qy - THIS_CELL.qy)/LSDCatchmentModel::DY );
 }
 
 
@@ -1038,7 +1039,10 @@ void LSDCatchmentModel::load_data()
 void LSDCatchmentModel::initialise_variables(std::string pname,
                                              std::string pfname)
 {
-  std::cout << "Initialising the model parameters..." << std::endl;
+  if(LibGeoDecomp::MPILayer().rank() == 0)
+    {
+      std::cout << "Initialising the model parameters..." << std::endl;
+    }
   // Concatenate the path and parameter file name to get the full file path
   string full_name = pname + "/" + pfname;  
   
@@ -1047,8 +1051,11 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
   infile.open(full_name.c_str());
   string parameter, value, lower, lower_val;
   string bc;
-
-  std::cout << "Parameter filename is: " << full_name << std::endl;
+  
+  if(LibGeoDecomp::MPILayer().rank() == 0)
+    {
+      std::cout << "Parameter filename is: " << full_name << std::endl;
+    }
 
   // now ingest parameters
   while (infile.good())
@@ -1070,38 +1077,56 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
       dem_read_extension = value;
       dem_read_extension = RemoveControlCharactersFromEndOfString(
                               dem_read_extension);
-      std::cout << "dem_read_extension: " << dem_read_extension << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "dem_read_extension: " << dem_read_extension << std::endl;
+	} 
     }
     else if (lower == "dem_write_extension")
     {
       dem_write_extension = value;
       dem_write_extension = RemoveControlCharactersFromEndOfString(
                               dem_write_extension);
-      std::cout << "dem_write_extension: " << dem_write_extension << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "dem_write_extension: " << dem_write_extension << std::endl;
+	}
     }
     else if (lower == "write_path")
     {
       write_path = value;
       write_path = RemoveControlCharactersFromEndOfString(write_path);
-      std::cout << "output write path: " << write_path << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "output write path: " << write_path << std::endl;
+	}
     }
     else if (lower == "write_fname")
     {
       write_fname = value;
       write_fname = RemoveControlCharactersFromEndOfString(write_fname);
-      std::cout << "write_fname: " << write_fname << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "write_fname: " << write_fname << std::endl;
+	}
     }
     else if (lower == "read_path")
     {
       read_path = value;
       read_path = RemoveControlCharactersFromEndOfString(read_path);
-      std::cout << "read_path: " << read_path << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "read_path: " << read_path << std::endl;
+	}
     }
     else if (lower == "read_fname")
     {
       read_fname = value;
       read_fname = RemoveControlCharactersFromEndOfString(read_fname);
-      std::cout << "read_fname: " << read_fname << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "read_fname: " << read_fname << std::endl;
+	}
     }
     
     //=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -1115,12 +1140,18 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
     else if (lower == "hydroindex_file")
     {
       hydroindex_fname = value;
-      std::cout << "hydroindex_file: " << hydroindex_fname << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "hydroindex_file: " << hydroindex_fname << std::endl;
+	}
     }
     else if (lower == "rainfall_data_file")
     {
       rainfall_data_file = value;
-      std::cout << "rainfall_data_file: " << rainfall_data_file << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "rainfall_data_file: " << rainfall_data_file << std::endl;
+	}
     }
     
     //=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -1129,7 +1160,10 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
     else if (lower == "no_of_iterations")
     {
       no_of_iterations = atoi(value.c_str());
-      std::cout << "no of iterations: " << no_of_iterations << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "no of iterations: " << no_of_iterations << std::endl;
+	}
     }
     
     
@@ -1145,112 +1179,162 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
     else if (lower == "hydro_model_only")
     {
       hydro_only = (value == "yes") ? true : false;
-      std::cout << "run hydro model only (NO EROSION): "
-                << hydro_only << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "run hydro model only (NO EROSION): "
+		    << hydro_only << std::endl;
+	}
     }
 
     else if (lower == "rainfall_data_on")
     {
       rainfall_data_on = (value == "yes") ? true : false;
-      std::cout << "rainfall_data_on: " << rainfall_data_on << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "rainfall_data_on: " << rainfall_data_on << std::endl;
+	}
     }
 
     else if (lower == "topmodel_m_value")
     {
       M = atof(value.c_str());
-      std::cout << "topmodel m value: " << M << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "topmodel m value: " << M << std::endl;
+	}
     }
 
     else if (lower == "num_unique_rain_cells")
     {
       rfnum = atoi(value.c_str());
-      std::cout << "Number of unique rain cells: " << rfnum << std::endl;
+      {
+	std::cout << "Number of unique rain cells: " << rfnum << std::endl;
+      }
     }
 
     else if (lower == "rain_data_time_step")
     {
       rain_data_time_step = atof(value.c_str());
-      std::cout << "rainfall data time step: "
-                << rain_data_time_step << std::endl;
+      {
+	std::cout << "rainfall data time step: "
+		  << rain_data_time_step << std::endl;
+      }
     }
 
     else if (lower == "spatial_var_rain")
     {
       spatially_var_rainfall = (value == "yes") ? true : false;
-      std::cout << "Spatially variable rainfall: "
-                << spatially_var_rainfall << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "Spatially variable rainfall: "
+		    << spatially_var_rainfall << std::endl;
+	}
+    
     }
 
     else if (lower == "in_out_difference")
     {
       in_out_difference_allowed = atof(value.c_str());
-      std::cout << "in-output difference allowed (cumecs): "
-                << in_out_difference_allowed << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "in-output difference allowed (cumecs): "
+		    << in_out_difference_allowed << std::endl;
+	}
     }
 
     else if (lower == "min_q_for_depth_calc")
     {
       MIN_Q = atof(value.c_str());
-      std::cout << "minimum discharge for depth calculation: "
-                << MIN_Q << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "minimum discharge for depth calculation: "
+		    << MIN_Q << std::endl;
+	}
     }
 
     else if (lower == "max_q_for_depth_calc")
     {
       MIN_Q_MAXVAL = atof(value.c_str());
-      std::cout << "max discharge for depth calc: "
-                << MIN_Q_MAXVAL << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "max discharge for depth calc: "
+		    << MIN_Q_MAXVAL << std::endl;
+	}
     }
 
     else if (lower == "hflow_threshold")
     {
       LSDCatchmentModel::hflow_threshold = atof(value.c_str());
-      std::cout << "Horizontal flow threshold: "
-                << LSDCatchmentModel::hflow_threshold << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "Horizontal flow threshold: "
+		    << LSDCatchmentModel::hflow_threshold << std::endl;
+	}
     }
 
     else if (lower == "water_depth_erosion_threshold")
     {
       LSDCatchmentModel::water_depth_erosion_threshold = atof(value.c_str());
-      std::cout << "Water depth for erosion threshold: "
-                << LSDCatchmentModel::water_depth_erosion_threshold << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "Water depth for erosion threshold: "
+		    << LSDCatchmentModel::water_depth_erosion_threshold << std::endl;
+	}
     }
 
     else if (lower == "slope_on_edge_cell")
     {
       LSDCatchmentModel::edgeslope = atof(value.c_str());
-      std::cout << "Slope on model domain edge: "
-                << LSDCatchmentModel::edgeslope << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "Slope on model domain edge: "
+		    << LSDCatchmentModel::edgeslope << std::endl;
+	}
     }
 
     else if (lower == "evaporation_rate")
     {
       k_evap = atof(value.c_str());
-      std::cout << "Evaporation rate: " << k_evap << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "Evaporation rate: " << k_evap << std::endl;
+	}
     }
     
     else if (lower == "courant_number")
     {
       LSDCatchmentModel::courant_number = atof(value.c_str());
-      std::cout << "Courant number: " << LSDCatchmentModel::courant_number << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "Courant number: " << LSDCatchmentModel::courant_number << std::endl;
+	}
     }
     
     else if (lower == "froude_num_limit")
     {
       LSDCatchmentModel::froude_limit = atof(value.c_str());
-      std::cout << "Froude number limit: " << LSDCatchmentModel::froude_limit << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "Froude number limit: " << LSDCatchmentModel::froude_limit << std::endl;
+	}
     }
 
     else if (lower == "mannings_n")
     {
       LSDCatchmentModel::mannings = atof(value.c_str());
-      std::cout << "mannings: " << LSDCatchmentModel::mannings << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "mannings: " << LSDCatchmentModel::mannings << std::endl;
+	}
     }
     else if (lower == "spatially_complex_rainfall_on")
     {
       spatially_complex_rainfall = (value == "yes") ? true : false;
-      std::cout << "Spatially complex rainfall option: "
-                << spatially_complex_rainfall << std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "Spatially complex rainfall option: "
+		    << spatially_complex_rainfall << std::endl;
+	}
     }
     
     
@@ -1262,24 +1346,27 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
     else if (lower == "write_water_depth_ppm")
       {
 	LSDCatchmentModel::write_water_depth_ppm = (value == "yes") ? true : false;
-	std::cout << "Visualise water depth at ppm: "
-		  << LSDCatchmentModel::write_water_depth_ppm << std::endl;
       }
     
   }
-  
-  std::cout << "No other parameters found, parameter ingestion complete."
-	    << std::endl;
-  std::cout << "Initialising hard coded-constants." << std::endl;
 
+  if(LibGeoDecomp::MPILayer().rank() == 0)
+    {
+      std::cout << "No other parameters found, parameter ingestion complete."
+		<< std::endl;
+      std::cout << "Initialising hard coded-constants." << std::endl;
+    }
   // Initialise the other parameters (those not set by param file)
   tx = output_file_save_interval;
   
   if (spatially_var_rainfall == false)
     {
-      std::cout << "Making sure no of rain cells is set to 1, "
-		<< "for uniform rainfall input.."
-		<< std::endl;
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  std::cout << "Making sure no of rain cells is set to 1, "
+		    << "for uniform rainfall input.."
+		    << std::endl;
+	}
       rfnum = 1;
     }
 }
@@ -1332,8 +1419,8 @@ void runSimulation(std::string pname, std::string pfname)
     {
       if(LibGeoDecomp::MPILayer().rank() == 0)
 	{
-	  system("mkdir -p ppm/elevation");
-	  elevationPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::elevation, 0.0, 255.0, "ppm/elevation/elevation", \
+	  system("mkdir -p elevation/ppm");
+	  elevationPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::elevation, 0.0, 255.0, "elevation/ppm/elevation", \
 								 catchment->elevation_ppm_interval, LibGeoDecomp::Coord<2>(20, 20));
 	}
     }
@@ -1341,8 +1428,8 @@ void runSimulation(std::string pname, std::string pfname)
     {
       if(LibGeoDecomp::MPILayer().rank() == 0)
 	{
-	  system("mkdir -p ppm/water_depth");
-	  water_depthPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::water_depth, 0.0, 1.0, "ppm/water_depth/water_depth", \
+	  system("mkdir -p water_depth/ppm");
+	  water_depthPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::water_depth, 0.0, 1.0, "water_depth/ppm/water_depth", \
 								   catchment->water_depth_ppm_interval, LibGeoDecomp::Coord<2>(20, 20));
 	}
       LibGeoDecomp::CollectingWriter<Cell> *water_depthPPMCollectingWriter = new LibGeoDecomp::CollectingWriter<Cell>(water_depthPPMWriter);

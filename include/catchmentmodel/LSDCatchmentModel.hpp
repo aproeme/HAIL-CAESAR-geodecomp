@@ -247,18 +247,18 @@ public:
   /// shallow water equations. Does not assume steady state flow across the
   /// landscape. (i.e. this is the LISFLOOD algorithm)
   void flow_route();
-
+  
   /// @brief Wrapper that determines which water input routine to call,
   /// either the default one, or the object-based one with spatially complex
   /// runoff paterns.
   /// @todo This logic needs simplifying, why bother creating a runoff object
   /// if it is never used for the simple runoff case (which is most uses.)
   //  void catchment_waterinputs(runoffGrid& runoff);
-
+  
   /// @brief Calculates the amount of runoff on a grid-cell from the rainfall
   /// timeseries input
   //  void catchment_water_input_and_hydrology( double local_time_factor);
-
+  
   /// @brief Overloaded function is for when using the fully distriuted/complex
   /// rainfall patterns option in the model. Takes a reference to the runoffGrid
   /// object.

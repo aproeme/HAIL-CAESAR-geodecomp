@@ -17,7 +17,7 @@ BUILDDIR := build
 SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-CFLAGS := -g -fopenmp -std=c++11 $(GITREV) -Wfatal-errors #-O3 or -O2  REMEMBER TO TURN THIS BACK ON BEFORE RUNNING PRODUCTION
+CFLAGS := -g -fopenmp -std=c++11 $(GITREV) -Wfatal-errors -Og #-O3 or -O2  REMEMBER TO TURN THIS BACK ON BEFORE RUNNING PRODUCTION
 INC := -I . -I ./include -I./include/libgeodecomp -I $(GEODECOMP_DIR)/include -I $(BOOST_DIR)/include  
 LDFLAGS := -fopenmp -L $(GEODECOMP_DIR)/lib -L $(BOOST_DIR)/lib 
 LIBS := -lgeodecomp -lboost_date_time 
