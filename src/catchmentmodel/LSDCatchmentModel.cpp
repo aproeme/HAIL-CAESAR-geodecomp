@@ -116,7 +116,7 @@ void Cell::update(const COORD_MAP& neighborhood, unsigned nanoStep)
   
   // Hydrological and flow routing processes
   // Add water to the catchment from rainfall input file
-  catchment_waterinputs();
+  catchment_waterinputs(neighborhood);
   // Distribute the water with the LISFLOOD Cellular Automaton algorithm
   flow_route_x(neighborhood);
   flow_route_y(neighborhood);
@@ -156,7 +156,8 @@ void Cell::set_global_timefactor()
 
 
 
-void Cell::catchment_waterinputs() // refactor - incomplete (include runoffGrid for complex, i.e. spatially variable rainfall)
+template<typename COORD_MAP>
+void Cell::catchment_waterinputs(const COORD_MAP& neighborhood) // refactor - incomplete (include runoffGrid for complex, i.e. spatially variable rainfall)
 {
   
   //waterinput = 0;
@@ -168,12 +169,12 @@ void Cell::catchment_waterinputs() // refactor - incomplete (include runoffGrid 
     }
     else */
   //  {
-  catchment_water_input_and_hydrology(local_time_factor);
+  catchment_water_input_and_hydrology(neighborhood, local_time_factor);
   //    }
 }
 
-
-void Cell::catchment_water_input_and_hydrology(double local_time_factor)
+template<typename COORD_MAP>
+void Cell::catchment_water_input_and_hydrology(const COORD_MAP& neighborhood, double local_time_factor)
 {
   /*
   for (unsigned i = 1; i<=rfnum; i++)
@@ -181,7 +182,7 @@ void Cell::catchment_water_input_and_hydrology(double local_time_factor)
       waterinput += j_mean[i] * nActualGridCells[i] * LSDCatchmentModel::DX * LSDCatchmentModel::DX;
     }
   
-  for (int z=1; z <= totalinputpoints; z++)
+    for (int z=1; z <= totalinputpoints; z++)
     {
       int i = catchment_input_x_coord[z];
       int j = catchment_input_y_coord[z];
@@ -192,9 +193,12 @@ void Cell::catchment_water_input_and_hydrology(double local_time_factor)
 	  water_add_amt = ERODEFACTOR;
 	}
       
-      
-      // Removed now as done above
-      water_depth += water_add_amt;
+  */
+	
+  //water_depth += water_add_amt;
+  water_depth += 10.0;
+
+      /*
     }
   */
   
@@ -728,19 +732,14 @@ void Cell::depth_update(const COORD_MAP& neighborhood)
     std::cout << "\n\n WARNING: no depth update rule specified for cell type " << Cell::CellType(int(celltype))<< "\n\n";
     break;
   }
-
-  // Synthetic case for testing only: implement these synthetic test cases as artificial rainfall data files
-  if( celltype==Cell::EDGE_WEST || celltype==Cell::CORNER_NW || celltype==Cell::CORNER_SW)
-    {
-      water_depth = 0.25;
-    }
 }
 
   
 template<typename COORD_MAP>
 void Cell::update_water_depth(const COORD_MAP& neighborhood, double east_qx, double south_qy, double local_time_factor)
 {
-  water_depth = THIS_CELL.water_depth + local_time_factor * ( (east_qx - THIS_CELL.qx)/LSDCatchmentModel::DX + (south_qy - THIS_CELL.qy)/LSDCatchmentModel::DY );
+  // artificial rainfall
+  water_depth = 0.005 + THIS_CELL.water_depth + local_time_factor * ( (east_qx - THIS_CELL.qx)/LSDCatchmentModel::DX + (south_qy - THIS_CELL.qy)/LSDCatchmentModel::DY );
 }
 
 

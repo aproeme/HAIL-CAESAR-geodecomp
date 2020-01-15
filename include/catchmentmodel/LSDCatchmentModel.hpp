@@ -253,16 +253,16 @@ public:
   /// runoff paterns.
   /// @todo This logic needs simplifying, why bother creating a runoff object
   /// if it is never used for the simple runoff case (which is most uses.)
-  void catchment_waterinputs(runoffGrid& runoff);
+  //  void catchment_waterinputs(runoffGrid& runoff);
 
   /// @brief Calculates the amount of runoff on a grid-cell from the rainfall
   /// timeseries input
-  void catchment_water_input_and_hydrology( double local_time_factor);
+  //  void catchment_water_input_and_hydrology( double local_time_factor);
 
   /// @brief Overloaded function is for when using the fully distriuted/complex
   /// rainfall patterns option in the model. Takes a reference to the runoffGrid
   /// object.
-  void catchment_water_input_and_hydrology( double local_time_factor, runoffGrid& runoff);
+  //void catchment_water_input_and_hydrology( double local_time_factor, runoffGrid& runoff);
 
   /// @brief Gets the number of catchment cells that have water input to them
   /// @detail Calculates which cells contain a discharge greater than MIN_Q

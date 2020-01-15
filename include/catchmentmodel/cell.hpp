@@ -63,13 +63,13 @@ public:
 	      double qx_in, double qy_in);
   
   void set_global_timefactor();
-  void catchment_waterinputs();
-  void catchment_water_input_and_hydrology(double local_time_factor);
   double set_local_timefactor();
   void froude_check(double &q, double hflow);
   void update_q(const double &q_old, double &q_new, double hflow, double tempslope, double local_time_factor);
   
   template<typename COORD_MAP> void update(const COORD_MAP& neighborhood, unsigned nanoStep);
+  template<typename COORD_MAP> void catchment_waterinputs(const COORD_MAP& neighborhood);
+  template<typename COORD_MAP> void catchment_water_input_and_hydrology(const COORD_MAP& neighborhood, double local_time_factor);
   template<typename COORD_MAP> void water_flux_out(const COORD_MAP& neighborhood);
   template<typename COORD_MAP> void flow_route_x(const COORD_MAP& neighborhood);
   template<typename COORD_MAP> void flow_route_y(const COORD_MAP& neighborhood);
