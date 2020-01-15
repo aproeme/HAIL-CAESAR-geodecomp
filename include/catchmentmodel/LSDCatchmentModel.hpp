@@ -43,6 +43,7 @@ class LSDCatchmentModel: public LSDRaster
 {
   friend class Cell;
   friend class CellInitializer;
+  friend class Typemaps;
   
 public:
 
@@ -318,13 +319,24 @@ public:
   /// during periods of low water flow. (e.g. inter-storm periods.)
   void set_inputoutput_diff();
 
-  // skipped vegetation growth, see master branch
+  // skipped vegetation growth, see original code
   
-  int no_of_iterations;
+  int no_of_iterations = 3;
 
-  
-
-private:
+  // visualisation options
+  bool write_elevation_ppm = false;
+  bool write_elevation_bov = false;
+  bool write_elevation_visit = false;
+  bool write_water_depth_ppm = false;
+  bool write_water_depth_bov = false;
+  bool write_water_depth_visit = false;
+  int elevation_ppm_interval = 1;
+  int elevation_bov_interval = 1; 
+  int elevation_visit_interval = 1;
+  int water_depth_ppm_interval = 1;
+  int water_depth_bov_interval = 1;
+  int water_depth_visit_interval = 1;
+  int pixels_per_cell = 10;
 
   string dem_read_extension;
   string dem_write_extension;
@@ -333,6 +345,8 @@ private:
   string write_fname = "catchment.dat";
   string read_fname;
 
+  private:
+  
   bool uniquefilecheck = false;
 
   //constants
@@ -569,7 +583,6 @@ private:
   bool suspended_opt = false;
   bool jmeaninputfile_opt = false;
   // This is for reading discharge direct from input file - DAV 2/2016
-  // (Dear god I've been working on this code for 2.5 years nearly...)
   bool recirculate_opt = false;
   bool reach_mode_opt = false;
   bool dunes_opt = false;
@@ -616,7 +629,7 @@ private:
   std::string elevdiff_fname;
   std::string raingrid_fname;
   std::string runoffgrid_fname;
-
+  
   bool DEBUG_print_cycle_on = false;
   bool DEBUG_write_raingrid = false;
   bool DEBUG_write_runoffgrid = false;
@@ -624,9 +637,9 @@ private:
   int timeseries_interval;
   float run_time_start;
 
-
   int tempcycle = 0;
-
+  
+  
   std::vector< std::vector<float> > raingrid;	 // this is for the rainfall data file
 
   // Mainly just the definitions of the create() functions go here:

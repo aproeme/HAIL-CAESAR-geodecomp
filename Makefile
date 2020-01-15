@@ -20,7 +20,7 @@ OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 CFLAGS := -g -fopenmp -std=c++11 $(GITREV) -Wfatal-errors #-O3 or -O2  REMEMBER TO TURN THIS BACK ON BEFORE RUNNING PRODUCTION
 INC := -I . -I ./include -I./include/libgeodecomp -I $(GEODECOMP_DIR)/include -I $(BOOST_DIR)/include  
 LDFLAGS := -fopenmp -L $(GEODECOMP_DIR)/lib -L $(BOOST_DIR)/lib 
-LIBS := -lgeodecomp -lboost_date_time
+LIBS := -lgeodecomp -lboost_date_time 
 
 TYPEMAP_TEST_OBJECTS := src/catchmentmodel/LSDCatchmentModel.o src/libgeodecomp/typemaps.o test/typemaptest.o
 
@@ -75,7 +75,7 @@ print_build_mode:
 
 clean:
 	@echo " Cleaning..."; 
-	@echo " $(RM) -rf $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDDIR) $(TARGET)
+	@echo " $(RM) -rf $(BUILDDIR) $(TARGET) typemaps"; $(RM) -r $(BUILDDIR) $(TARGET) typemaps
 
 # Tests
 tester:

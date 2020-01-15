@@ -175,10 +175,6 @@ void Cell::catchment_waterinputs() // refactor - incomplete (include runoffGrid 
 
 void Cell::catchment_water_input_and_hydrology(double local_time_factor)
 {
-
-  // TEMP - uniform rainfall
-  water_depth += 0.1;
-  
   /*
   for (unsigned i = 1; i<=rfnum; i++)
     {
@@ -1044,7 +1040,7 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
                                              std::string pfname)
 {
   std::cout << "Initialising the model parameters..." << std::endl;
-  // Concatenate the path and paramter file name to get the full file address
+  // Concatenate the path and parameter file name to get the full file path
   string full_name = pname + "/" + pfname;  
   
   std::ifstream infile;
@@ -1069,7 +1065,7 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
 
     // get rid of control characters
     value = RemoveControlCharactersFromEndOfString(value);
-
+    
     if (lower == "dem_read_extension")
     {
       dem_read_extension = value;
@@ -1127,17 +1123,7 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
       rainfall_data_file = value;
       std::cout << "rainfall_data_file: " << rainfall_data_file << std::endl;
     }
-    else if (lower == "grain_data_file")
-    {
-      grain_data_file = value;
-      std::cout << "grain data file: " << grain_data_file << std::endl;
-    }
-    else if (lower == "bedrock_data_file")
-    {
-      bedrock_data_file = value;
-      std::cout << "bedrock data file: " << bedrock_data_file << std::endl;
-    }
-
+    
     //=-=-=-=-=-=-=-=-=-=-=-=-=-=
     // Numerical
     //=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -1146,13 +1132,11 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
       no_of_iterations = atoi(value.c_str());
       std::cout << "no of iterations: " << no_of_iterations << std::endl;
     }
-
-
+    
+    
     
     // Other numerical parameters, output and save options, sedimentation,
     // erosion, grain size options, still to be ported from original code
-    // (master branch)
-
 
 
 
@@ -1245,13 +1229,13 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
       k_evap = atof(value.c_str());
       std::cout << "Evaporation rate: " << k_evap << std::endl;
     }
-
-    else if (lower == "LSDCatchmentModel::courant_number")
+    
+    else if (lower == "courant_number")
     {
       LSDCatchmentModel::courant_number = atof(value.c_str());
       std::cout << "Courant number: " << LSDCatchmentModel::courant_number << std::endl;
     }
-
+    
     else if (lower == "froude_num_limit")
     {
       LSDCatchmentModel::froude_limit = atof(value.c_str());
@@ -1269,13 +1253,20 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
       std::cout << "Spatially complex rainfall option: "
                 << spatially_complex_rainfall << std::endl;
     }
-
-
-
+    
     
     // Vegetation, hillslope & debugging options still to be ported
     // from original code (master branch)
-
+    
+    
+    // Visualisation
+    else if (lower == "write_water_depth_ppm")
+      {
+	LSDCatchmentModel::write_water_depth_ppm = (value == "yes") ? true : false;
+	std::cout << "Visualise water depth at ppm: "
+		  << LSDCatchmentModel::write_water_depth_ppm << std::endl;
+      }
+    
   }
   
   std::cout << "No other parameters found, parameter ingestion complete."
@@ -1306,71 +1297,68 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
 void runSimulation(std::string pname, std::string pfname)
 {
 #ifdef COMPILE_FOR_PARALLEL
-  //LibGeoDecomp::Typemaps::initializeMaps(); // initialize LibGeoDecomp native typemaps (this commits MPI types)
-  //Typemaps::initializeMaps(); // initialize custom typemaps for HAIL-CAESAR
-  
-  int outputFrequency = 1;  
-  LibGeoDecomp::PPMWriter<Cell> *waterdepthPPMWriter = 0;
+
   std::string initial_snapshot_name = "initial_snapshot";
-  std::string initial_snapshot_file = initial_snapshot_name + "00000.mpiio";
-  LSDCatchmentModel *catchment;
+  std::string initial_snapshot_file = initial_snapshot_name + ".mpiio";
+  LSDCatchmentModel *catchment = new LSDCatchmentModel(pname, pfname); // so we have model params available on each rank (MPI_Bcast if overhead too large)
   
-  
-  
-  // Run one step serially to generate MPI-IO snapshot
+  // Run one step serially to load input data, initialise grid, and write MPI-IO snapshot
   if (LibGeoDecomp::MPILayer().rank() == 0)
     {
-      catchment = new LSDCatchmentModel(pname, pfname);
-      catchment->initialise_model_domain_extents();
+      catchment->initialise_model_domain_extents(); 
       catchment->initialise_arrays(); 
       catchment->load_data();
       CellInitializer *initialiser = new CellInitializer(catchment, 0);
       LibGeoDecomp::SerialSimulator<Cell> init(initialiser);
       
-      // -------------------------------
-      // If running synthetic test cases to debug, write grid values to PPM files to visualise and to simple ASCII files for inspection
-      init.addWriter(new LibGeoDecomp::PPMWriter<Cell>(&Cell::elevation, 0.0, 255.0, "elevation", 1, LibGeoDecomp::Coord<2>(20, 20)));
-      init.addWriter(new LibGeoDecomp::PPMWriter<Cell>(&Cell::water_depth, 0.0, 1.0, "water_depth", 1, LibGeoDecomp::Coord<2>(20, 20)));
-      init.addWriter(new LibGeoDecomp::ASCIIWriter<Cell>("elevation", &Cell::elevation, 1)); 
-      init.addWriter(new LibGeoDecomp::ASCIIWriter<Cell>("water_depth", &Cell::water_depth, 1));
-      // -------------------------------
-      init.addWriter(new LibGeoDecomp::MPIIOWriter<Cell>(initial_snapshot_name, 1, 1, MPI_COMM_SELF, MPI_CELL));
       std::cout << "\n Generating initial MPI-IO snapshot...";
+      init.addWriter(new LibGeoDecomp::MPIIOWriter<Cell>("", 1, 1, MPI_COMM_SELF, MPI_CELL));
       init.run();
       std::cout << "done \n";
     }
   
-  
   LibGeoDecomp::MPILayer().barrier();  // Make sure rank 0 has finished writing initial MPI IO snapshot
-  LibGeoDecomp::MPIIOInitializer<Cell> *mpiio_initialiser = new LibGeoDecomp::MPIIOInitializer<Cell>(initial_snapshot_file, MPI_CELL);
+  LibGeoDecomp::MPIIOInitializer<Cell> *mpiio_initialiser = new LibGeoDecomp::MPIIOInitializer<Cell>("00000.mpiio", MPI_CELL);
   LibGeoDecomp::MPILayer().barrier();
-  if( LibGeoDecomp::MPILayer().rank() == 0){ std::cout << "\n MPIIO snapshot loaded, initialising parallel simulation..."; }
+  if( LibGeoDecomp::MPILayer().rank() == 0){ std::cout << "\n MPIIO snapshot loaded, initialising parallel simulation... \n\n"; }
   LibGeoDecomp::StripingSimulator<Cell> sim(mpiio_initialiser, LibGeoDecomp::MPILayer().rank()? 0 : new LibGeoDecomp::NoOpBalancer(), 10);
-  if( LibGeoDecomp::MPILayer().rank() == 0){ std::cout << "done \n"; }
-  sim.setMaxSteps(100);
-  
-  /* Visualise state of system as PPM format images using CollectingWriter
-   *  The CollectingWriter collects distributed data before writing serially, so all memory is concentrated on one node and IO is serialized.
-   *  For testing & development / debugging of small-scale parallel simulations only, can not handle large real DEM terrains.
-   */
+  sim.setMaxSteps(catchment->no_of_iterations);
+  LibGeoDecomp::MPILayer().barrier();
 
   
-  if(LibGeoDecomp::MPILayer().rank() == 0)
+  // Set up visualisation outputs  
+  LibGeoDecomp::PPMWriter<Cell> *elevationPPMWriter = 0;
+  LibGeoDecomp::PPMWriter<Cell> *water_depthPPMWriter = 0;
+  if(catchment->write_elevation_ppm)
     {
-      waterdepthPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::water_depth, 0.0, 1.0, "water_depth", outputFrequency, LibGeoDecomp::Coord<2>(10, 10));
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  system("mkdir -p ppm/elevation");
+	  elevationPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::elevation, 0.0, 255.0, "ppm/elevation/elevation", \
+								 catchment->elevation_ppm_interval, LibGeoDecomp::Coord<2>(20, 20));
+	}
     }
-  LibGeoDecomp::CollectingWriter<Cell> *waterdepthPPMCollectingWriter = new LibGeoDecomp::CollectingWriter<Cell>(waterdepthPPMWriter);
-  sim.addWriter(waterdepthPPMCollectingWriter);
+  if(catchment->write_water_depth_ppm)
+    {
+      if(LibGeoDecomp::MPILayer().rank() == 0)
+	{
+	  system("mkdir -p ppm/water_depth");
+	  water_depthPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::water_depth, 0.0, 1.0, "ppm/water_depth/water_depth", \
+								   catchment->water_depth_ppm_interval, LibGeoDecomp::Coord<2>(20, 20));
+	}
+      LibGeoDecomp::CollectingWriter<Cell> *water_depthPPMCollectingWriter = new LibGeoDecomp::CollectingWriter<Cell>(water_depthPPMWriter);
+      sim.addWriter(water_depthPPMCollectingWriter);
+    }
   
   //sim.addWriter(new LibGeoDecomp::BOVWriter<Cell>(LibGeoDecomp::Selector<Cell>(&Cell::elevation, "elevation"), "elevation", outputFrequency));
   //sim.addWriter(new LibGeoDecomp::BOVWriter<Cell>(LibGeoDecomp::Selector<Cell>(&Cell::water_depth, "water_depth"), "water_depth", outputFrequency));
   
-  if (LibGeoDecomp::MPILayer().rank() == 0){ sim.addWriter(new LibGeoDecomp::TracingWriter<Cell>(1,100)); }
+  if (LibGeoDecomp::MPILayer().rank() == 0){ sim.addWriter(new LibGeoDecomp::TracingWriter<Cell>(1, catchment->no_of_iterations)); }
   
   sim.run();
       
   LibGeoDecomp::MPILayer().barrier(); 
-  
+
   
      
 #endif
