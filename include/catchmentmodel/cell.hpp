@@ -1,9 +1,7 @@
 #include <libgeodecomp/misc/apitraits.h>
 #include <libgeodecomp/geometry/coord.h>
 
-#ifdef COMPILE_FOR_PARALLEL
 #include <typemaps.h>
-#endif
 
 #ifndef CELL_H
 #define CELL_H
@@ -24,11 +22,9 @@ class Cell
   
   class API :
     public LibGeoDecomp::APITraits::HasStencil<LibGeoDecomp::Stencils::VonNeumann<2,1> >,
-    public LibGeoDecomp::APITraits::HasCubeTopology<2>
-#ifdef COMPILE_FOR_PARALLEL
-    , public LibGeoDecomp::APITraits::HasCustomMPIDataType<Cell>
-    , public LibGeoDecomp::APITraits::HasOpaqueMPIDataType<Cell>
-#endif
+    public LibGeoDecomp::APITraits::HasCubeTopology<2>,
+    public LibGeoDecomp::APITraits::HasCustomMPIDataType<Cell>,
+    public LibGeoDecomp::APITraits::HasOpaqueMPIDataType<Cell>
   {};
   
 

@@ -27,9 +27,7 @@
 #include <libgeodecomp/misc/apitraits.h>
 #include <libgeodecomp/geometry/coord.h>
 
-#ifdef COMPILE_FOR_PARALLEL
 #include <typemaps.h>
-#endif
 
 #ifndef LSDCatchmentModel_geodecomp_H
 #define LSDCatchmentModel_geodecomp_H

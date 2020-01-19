@@ -2,16 +2,15 @@
 #include <sys/stat.h> 
 
 #include <boost/assign/std/vector.hpp>
+
+#include "typemaps.h"
 #include <libgeodecomp/io/ppmwriter.h>
 #include <libgeodecomp/misc/apitraits.h>
 #include <libgeodecomp/io/tracingwriter.h>
 #include <libgeodecomp/io/simpleinitializer.h>
 #include <libgeodecomp/parallelization/serialsimulator.h>
 #include <libgeodecomp/io/asciiwriter.h>
-
-#ifdef COMPILE_FOR_PARALLEL
 #include <libgeodecomp/io/mpiiowriter.h>
-#include "typemaps.h"
 #include <libgeodecomp/communication/typemaps.h>
 #include <libgeodecomp/io/collectingwriter.h>
 #include <libgeodecomp/io/mpiioinitializer.h>
@@ -19,7 +18,6 @@
 #include <libgeodecomp/parallelization/stripingsimulator.h>
 #include <libgeodecomp/loadbalancer/noopbalancer.h>
 #include <libgeodecomp/io/bovwriter.h>
-#endif
 
 #include "catchmentmodel/cell.hpp"
 #include "catchmentmodel/LSDCatchmentModel.hpp"
@@ -93,8 +91,6 @@ Cell::Cell(Cell::CellType celltype_in = INTERNAL,	\
 
 
 
-#ifdef COMPILE_FOR_PARALLEL
-
 template<typename Cell>
 class LibGeoDecomp::APITraits::SelectMPIDataType<Cell>  
 {
@@ -104,7 +100,7 @@ public:
     return MPI_CELL;  // MPI_CELL is initialized by custom-generated Typemaps::initializeMaps() for HAIL-CAESAR Cell class
   }
 };
-#endif
+
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1408,8 +1404,7 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
 
 void runSimulation(std::string pname, std::string pfname)
 {
-#ifdef COMPILE_FOR_PARALLEL
-
+  
   std::string initial_snapshot_name = "initial_snapshot";
   std::string initial_snapshot_file = initial_snapshot_name + ".mpiio";
   LSDCatchmentModel *catchment = new LSDCatchmentModel(pname, pfname); // so we have model params available on each rank (MPI_Bcast if overhead too large)
@@ -1469,16 +1464,11 @@ void runSimulation(std::string pname, std::string pfname)
     }
   
   
-  
   if (LibGeoDecomp::MPILayer().rank() == 0){ sim.addWriter(new LibGeoDecomp::TracingWriter<Cell>(1, catchment->no_of_iterations)); }
   
   sim.run();
       
   LibGeoDecomp::MPILayer().barrier(); 
-
-  
-     
-#endif
   
 }
 

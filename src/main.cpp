@@ -15,18 +15,15 @@
 
 using namespace LSDUtils;
 
-#ifdef COMPILE_FOR_PARALLEL
 #include <mpi.h>
 #include <typemaps.h>
 #include "typemaps.h"
 #include <libgeodecomp/communication/typemaps.h>
 
-#endif
 
 
 int main(int argc, char *argv[])
 {
-#ifdef COMPILE_FOR_PARALLEL
   MPI_Init(&argc, &argv);
   std::string pname(argv[1]);
   std::string pfname(argv[2]);
@@ -55,7 +52,6 @@ int main(int argc, char *argv[])
 
   runSimulation(pname, pfname);
   MPI_Finalize();
-#endif
   
   return 0; 
 }

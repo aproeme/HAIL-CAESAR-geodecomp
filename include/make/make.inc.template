@@ -1,0 +1,17 @@
+# MPI wrapper command to compile C++ code (e.g. mpic++)
+CXX := 
+
+# Location of LibGeoDecomp installation
+GEODECOMP_DIR := 
+# Location of LibGeoDecomp source code
+GEODECOMP_SRC_DIR := 
+
+# Location of C++ Boost library
+BOOST_DIR := 
+
+# Location of the MPI library
+MPI_DIR := 
+
+# Optimisation flag (e.g. "-g -Og" for debugging, -O3 for production runs)
+CFLAGS := -O3 
+
