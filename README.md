@@ -10,18 +10,13 @@ To build the HPC version of HAIL-CAESAR you will need the following installed:
 - an MPI library (e.g. MPICH, OpenMPI, ...)
 - Boost
 - LibGeoDecomp (currently the hail-caesar branch, available from https://github.com/aproeme/libgeodecomp)
-- ruby
-- doxygen
 
 
 # Building
 
-To build, modify the Makefile to provide your MPI compiler commands (e.g. mpic++), the paths to your installations of the MPI library, Boost, and LibGeoDecomp
-Then, run:
-
-make typemaps
-
-make
+- Run ```cp ./include/make/make.inc.template ./ from ./include/make/```
+- Modify make.inc to specify the locations of Boost, LibGeoDecomp, and the MPI library, and the MPI compiler wrapper command to compile C++ code (e.g. mpic++)
+- ```make```
 
 You will be able to run the resulting executable ./bin/HAIL-CAESAR.mpi as follows (e.g. on ARCHER):
 
