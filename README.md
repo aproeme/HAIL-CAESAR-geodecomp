@@ -18,9 +18,9 @@ To build the HPC version of HAIL-CAESAR you will need the following installed:
 - Modify ```make.inc``` to specify the locations of Boost, LibGeoDecomp, and the MPI library, and the MPI compiler wrapper command to compile C++ code (e.g. mpic++)
 - Run ```make```
 
-You will be able to run the resulting executable ./bin/HAIL-CAESAR.mpi as follows (e.g. on ARCHER):
+You will be able to run the resulting executable ./bin/HAIL-CAESAR.mpi with the relevant parallel application launcher command (`mpirun`, `mpiexec`, etc.) as follows, e.g. on ARCHER: 
 
-aprun -n 24 HAIL-CAESAR.mpi path_to_params_file params_filename
+```aprun -n 24 HAIL-CAESAR.mpi path_to_params_file params_filename```
 
 The params file is used as in the original version of HAIL-CAESAR as described as http://hail-caesar.readthedocs.io/en/latest/
 
