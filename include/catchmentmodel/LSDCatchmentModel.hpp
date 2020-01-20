@@ -318,8 +318,12 @@ public:
   void set_inputoutput_diff();
 
   // skipped vegetation growth, see original code
-  
-  int no_of_iterations = 3;
+
+
+  // simulation options
+  int no_of_iterations = 100;
+  std::string simulator = "hipar";
+    
 
   // visualisation options
   bool write_elevation_ppm = false;

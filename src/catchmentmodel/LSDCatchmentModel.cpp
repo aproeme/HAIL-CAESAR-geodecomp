@@ -16,8 +16,10 @@
 #include <libgeodecomp/io/mpiioinitializer.h>
 #include <libgeodecomp/io/parallelmpiiowriter.h>
 #include <libgeodecomp/parallelization/stripingsimulator.h>
+#include <libgeodecomp/parallelization/hiparsimulator.h>
 #include <libgeodecomp/loadbalancer/noopbalancer.h>
 #include <libgeodecomp/io/bovwriter.h>
+#include <libgeodecomp/geometry/partitions/recursivebisectionpartition.h>
 
 #include "catchmentmodel/cell.hpp"
 #include "catchmentmodel/LSDCatchmentModel.hpp"
@@ -1164,6 +1166,7 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
     
     
     
+    
     // Other numerical parameters, output and save options, sedimentation,
     // erosion, grain size options, still to be ported from original code
 
@@ -1336,6 +1339,16 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
     
     // Vegetation, hillslope & debugging options still to be ported
     // from original code (master branch)
+
+
+    //=-=-=-=-=-=-=-=-=-=-=-=-=-=
+    // LibGeoDecomp Options
+    //=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+    else if (lower == "simulator")
+      {
+	LSDCatchmentModel::simulator = value;
+      }
     
     
     // Visualisation
@@ -1428,8 +1441,19 @@ void runSimulation(std::string pname, std::string pfname)
   LibGeoDecomp::MPIIOInitializer<Cell> *mpiio_initialiser = new LibGeoDecomp::MPIIOInitializer<Cell>("00000.mpiio", MPI_CELL);
   LibGeoDecomp::MPILayer().barrier();
   if( LibGeoDecomp::MPILayer().rank() == 0){ std::cout << "\n MPIIO snapshot loaded, initialising parallel simulation... \n\n"; }
-  LibGeoDecomp::StripingSimulator<Cell> sim(mpiio_initialiser, LibGeoDecomp::MPILayer().rank()? 0 : new LibGeoDecomp::NoOpBalancer(), 10);
-  sim.setMaxSteps(catchment->no_of_iterations);
+
+
+  LibGeoDecomp::DistributedSimulator<Cell> *sim = 0;
+  if(catchment->simulator == "striping")
+    {
+      sim = new LibGeoDecomp::StripingSimulator<Cell>(mpiio_initialiser, LibGeoDecomp::MPILayer().rank()? 0 : new LibGeoDecomp::NoOpBalancer(), 1);
+    }
+  else if(catchment->simulator == "hipar")
+    {
+      sim = new LibGeoDecomp::HiParSimulator<Cell, LibGeoDecomp::RecursiveBisectionPartition<2> >(mpiio_initialiser, LibGeoDecomp::MPILayer().rank() ? 0 : new LibGeoDecomp::NoOpBalancer(), 1, 1);
+    }
+  
+  sim->setMaxSteps(catchment->no_of_iterations);
   LibGeoDecomp::MPILayer().barrier();
 
   
@@ -1454,19 +1478,19 @@ void runSimulation(std::string pname, std::string pfname)
 								   catchment->water_depth_ppm_interval, LibGeoDecomp::Coord<2>(catchment->pixels_per_cell, catchment->pixels_per_cell));
 	}
       LibGeoDecomp::CollectingWriter<Cell> *water_depthPPMCollectingWriter = new LibGeoDecomp::CollectingWriter<Cell>(water_depthPPMWriter);
-      sim.addWriter(water_depthPPMCollectingWriter);
+      sim->addWriter(water_depthPPMCollectingWriter);
     }
   if(catchment->write_water_depth_bov)
     {
       system("mkdir -p water_depth/bov");
-      sim.addWriter(new LibGeoDecomp::BOVWriter<Cell>(LibGeoDecomp::Selector<Cell>(&Cell::water_depth, "water_depth"), "water_depth/bov/water_depth", \
+      sim->addWriter(new LibGeoDecomp::BOVWriter<Cell>(LibGeoDecomp::Selector<Cell>(&Cell::water_depth, "water_depth"), "water_depth/bov/water_depth", \
 						      catchment->water_depth_bov_interval));
     }
   
   
-  if (LibGeoDecomp::MPILayer().rank() == 0){ sim.addWriter(new LibGeoDecomp::TracingWriter<Cell>(1, catchment->no_of_iterations)); }
+  if (LibGeoDecomp::MPILayer().rank() == 0){ sim->addWriter(new LibGeoDecomp::TracingWriter<Cell>(1, catchment->no_of_iterations)); }
   
-  sim.run();
+  sim->run();
       
   LibGeoDecomp::MPILayer().barrier(); 
   
