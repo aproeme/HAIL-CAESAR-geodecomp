@@ -935,32 +935,32 @@ void LSDCatchmentModel::check_DEM_edge_condition()
   std::cout << temp << " " << imax << " " << jmax << std::endl;
   
   for (unsigned n = 0; n < jmax; n++)
-  {
-    // Check bottom edge (row major!)
-    if (elev[imax-1][n] > LSDCatchmentModel::no_data_value) temp = elev[imax-1][n];
-    // check top edge
-    if (elev[1][n] > LSDCatchmentModel::no_data_value) temp = elev[1][n];
-  }
+    {
+      // Check bottom edge (row major!)
+      if (elev[imax-1][n] > LSDCatchmentModel::no_data_value) temp = elev[imax-1][n];
+      // check top edge
+      if (elev[1][n] > LSDCatchmentModel::no_data_value) temp = elev[1][n];
+    }
   for (unsigned n = 0; n < imax; n++)
-  {
-    // check LH edge
-    if (elev[n][1] > LSDCatchmentModel::no_data_value) temp = elev[n][1];
-    // check RH edge
-    if (elev[n][jmax-1] > LSDCatchmentModel::no_data_value) temp = elev[n][jmax-1];
-  }
-
+    {
+      // check LH edge
+      if (elev[n][1] > LSDCatchmentModel::no_data_value) temp = elev[n][1];
+      // check RH edge
+      if (elev[n][jmax-1] > LSDCatchmentModel::no_data_value) temp = elev[n][jmax-1];
+    }
+  
   if (temp < -10)
-  {
-    std::cout << "DEM EDGE CONDITION ERROR: LSDCatchmentModel may not function \
-                 properly, as the edges of the DEM are all nodata (-9999) \
-                 values. This will prevent any water or sediment from leaving \
-                 the edge of the model domain (DEM)" << std::endl;
-        exit(EXIT_FAILURE);
-  }
+    {
+      std::cout << "DEM EDGE CONDITION ERROR: LSDCatchmentModel may not function  \
+properly, as the edges of the DEM are all nodata (-9999)		\
+values. This will prevent any water or sediment from leaving		\
+the edge of the model domain (DEM)" << std::endl;
+      exit(EXIT_FAILURE);
+    }
   else
-  {
-    std::cout << "Suitable outlet point on edge found. " << std::endl;
-  }
+    {
+      std::cout << "Suitable outlet point on edge found. " << std::endl;
+    }
 }
 
 

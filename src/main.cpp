@@ -25,7 +25,6 @@ using namespace LSDUtils;
 int main(int argc, char *argv[])
 {
   MPI_Init(&argc, &argv);
-  std::string pfname(argv[1]);
   
   LibGeoDecomp::Typemaps::initializeMaps(); // initialize LibGeoDecomp native typemaps (this commits MPI types)
   Typemaps::initializeMaps(); // initialize custom typemaps for HAIL-CAESAR    
@@ -60,11 +59,18 @@ int main(int argc, char *argv[])
 	  std::cout << "Too many input arguments supplied (should be 3...)" << std::endl;
 	  exit(0);
 	}
-      std::cout << " The parameter file is: " << pfname << std::endl;
+
     }
 
   LibGeoDecomp::MPILayer().barrier();
   
+  std::string pfname(argv[1]);
+  
+  if(LibGeoDecomp::MPILayer().rank() == 0)
+    {
+      std::cout << " The parameter file is: " << pfname << std::endl;  
+    }
+    
   runSimulation(pfname);
   MPI_Finalize();
   
