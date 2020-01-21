@@ -14,11 +14,11 @@ class Cell
   
   // refactor - Should replace these defines with type alias declarations (= C++11 template typedef)
   // refactor - check that grid orientation makes sense (write test)
-#define THIS_CELL neighborhood[LibGeoDecomp::Coord<2>( 0, 0)]
-#define WEST neighborhood[LibGeoDecomp::Coord<2>(-1, 0)]
-#define EAST neighborhood[LibGeoDecomp::Coord<2>( 1, 0)]
-#define NORTH neighborhood[LibGeoDecomp::Coord<2>( 0, -1)]
-#define SOUTH neighborhood[LibGeoDecomp::Coord<2>( 0,  1)]
+#define here_old neighborhood[LibGeoDecomp::Coord<2>( 0, 0)]
+#define west_old neighborhood[LibGeoDecomp::Coord<2>(-1, 0)]
+#define east_old neighborhood[LibGeoDecomp::Coord<2>( 1, 0)]
+#define north_old neighborhood[LibGeoDecomp::Coord<2>( 0, -1)]
+#define south_old neighborhood[LibGeoDecomp::Coord<2>( 0,  1)]
   
   class API :
     public LibGeoDecomp::APITraits::HasStencil<LibGeoDecomp::Stencils::VonNeumann<2,1> >,
