@@ -14,7 +14,7 @@ To build the HPC version of HAIL-CAESAR you will need the following installed:
 
 # Building
 
-- Run ```cp ./include/make/make.inc.template ./make.inc```
+- ```cp ./include/make/make.inc_template ./make.inc```  (or copy a readymade make.inc for the system you are building on if it already exists in /include/make/, e.g. make.inc_ARCHER)
 - Modify ```make.inc``` to specify the locations of Boost, LibGeoDecomp, and the MPI library, and the MPI compiler wrapper command to compile C++ code (e.g. mpic++)
 - Run ```make```
 

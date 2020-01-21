@@ -1,0 +1,28 @@
+#
+# To build on ARCHER (CRAY XC30 machine):
+#
+# module swap PrgEnv-cray PrgEnv-gnu
+# module swap gcc/6.3.0 gcc/7.2.0
+# module load boost
+# export CRAYPE_LINK_TYPE=dynamic
+# export LD_LIBRARY_PATH=/work/ecse1321/shared/libgeodecomp/hail-caesar/lib:$LD_LIBRARY_PATH
+# make 
+#
+
+# MPI wrapper command to compile C++ code (e.g. mpic++)
+CXX := CC
+
+# Location of LibGeoDecomp installation
+GEODECOMP_DIR := /home/ecse1321/shared/libgeodecomp/hail-caesar
+# Location of LibGeoDecomp source code
+GEODECOMP_SRC_DIR := /home/ecse1321/shared/libgeodecomp/libgeodecomp
+
+# Location of C++ Boost library (not needed on ARCHER as boost module already sets this)
+# BOOST_DIR := 
+
+# Location of the MPI library (not needed on CRAY machines as compiler wrappers already include this)
+# MPI_DIR := 
+
+# Optimisation flag (e.g. "-g -Og" for debugging, -O3 for production runs)
+CFLAGS := -g -Og
+
