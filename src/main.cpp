@@ -25,13 +25,12 @@ using namespace LSDUtils;
 int main(int argc, char *argv[])
 {
   MPI_Init(&argc, &argv);
-  std::string pname(argv[1]);
-  std::string pfname(argv[2]);
-  // The path name and the parameter file name, respectively.
-
+  std::string pfname(argv[1]);
+  
   LibGeoDecomp::Typemaps::initializeMaps(); // initialize LibGeoDecomp native typemaps (this commits MPI types)
   Typemaps::initializeMaps(); // initialize custom typemaps for HAIL-CAESAR    
   LibGeoDecomp::MPILayer().barrier();
+  
   
   if(LibGeoDecomp::MPILayer().rank() == 0)
     {
@@ -44,13 +43,29 @@ int main(int argc, char *argv[])
       std::cout << " at git commit number: " GIT_REVISION << std::endl;
       std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-" << std::endl;
       
-      std::cout << "The pathname is: " << pname
-		<< " and the parameter file is: " << pfname << std::endl;
+      if (argc < 2)
+	{
+	  std::cout << "\n###################################################" << std::endl;
+	  std::cout << "No parameter file supplied" << std::endl;
+	  std::cout << "You must supply a path and parameter file!" << std::endl;
+	  std::cout << "see https://dvalters.github.io/HAIL-CAESAR/" << std::endl;
+	  std::cout << "for assistance." << std::endl;
+	  std::cout << "###################################################" << std::endl;
+	  
+	  exit(0);
+	}
+      
+      if (argc > 2)
+	{
+	  std::cout << "Too many input arguments supplied (should be 3...)" << std::endl;
+	  exit(0);
+	}
+      std::cout << " The parameter file is: " << pfname << std::endl;
     }
-  
-  LibGeoDecomp::MPILayer().barrier();
 
-  runSimulation(pname, pfname);
+  LibGeoDecomp::MPILayer().barrier();
+  
+  runSimulation(pfname);
   MPI_Finalize();
   
   return 0; 

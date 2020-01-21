@@ -33,7 +33,7 @@
 #define LSDCatchmentModel_geodecomp_H
 
 
-void runSimulation(std::string pname, std::string pfname);
+void runSimulation(std::string pfname);
 
 
 
@@ -62,13 +62,12 @@ public:
 
   /// @brief this constructor just reads the param file given by the path and
   /// filename. You must give the parameter file extension!
-  /// @param pname the pathname to the parameter file
   /// @param pfname the filename of the parameter file !!INCLUDING EXTENSION!!
   /// @author DAV
   /// @date 2015-01-16
-  LSDCatchmentModel(string pname, string pfname)
+  LSDCatchmentModel(string pfname)
   {
-    create(pname, pfname);
+    create(pfname);
   }
 
   
@@ -91,7 +90,7 @@ public:
 
   /// @brief reads data values from the parameter file into the relevant maps
   /// @return
-  void initialise_variables(std::string pname, std::string pfname);
+  void initialise_variables(std::string pfname);
 
   /// @brief initialises array sizes based on DEM dimensions
   /// @details also sets 'hard-coded' parameters to start the model
@@ -648,7 +647,7 @@ public:
   // The implementations are in the .cpp file.
 
   void create();
-  void create(std::string pname, std::string pfname);
+  void create(std::string pfname);
 };
 
 #endif

@@ -57,9 +57,9 @@ void LSDCatchmentModel::create()
   exit(EXIT_FAILURE);
 }
 
-void LSDCatchmentModel::create(string pname, string pfname)
+void LSDCatchmentModel::create(std::string pfname)
 {
-  LSDCatchmentModel::initialise_variables(pname, pfname);
+  LSDCatchmentModel::initialise_variables(pfname);
   if(LibGeoDecomp::MPILayer().rank() == 0)
     {
       std::cout << "The user-defined parameters have been"
@@ -1034,15 +1034,14 @@ void LSDCatchmentModel::load_data()
 //   paramter ingestion method used in CHILD one day?
 //
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-void LSDCatchmentModel::initialise_variables(std::string pname,
-                                             std::string pfname)
+void LSDCatchmentModel::initialise_variables(std::string pfname)
 {
   if(LibGeoDecomp::MPILayer().rank() == 0)
     {
       std::cout << "Initialising the model parameters..." << std::endl;
     }
   // Concatenate the path and parameter file name to get the full file path
-  string full_name = pname + "/" + pfname;  
+  string full_name = pfname;  
   
   std::ifstream infile;
   // Open the parameter file
@@ -1415,12 +1414,12 @@ void LSDCatchmentModel::initialise_variables(std::string pname,
 
 
 
-void runSimulation(std::string pname, std::string pfname)
+void runSimulation(std::string pfname)
 {
   
   std::string initial_snapshot_name = "initial_snapshot";
   std::string initial_snapshot_file = initial_snapshot_name + ".mpiio";
-  LSDCatchmentModel *catchment = new LSDCatchmentModel(pname, pfname); // so we have model params available on each rank (MPI_Bcast if overhead too large)
+  LSDCatchmentModel *catchment = new LSDCatchmentModel(pfname); // so we have model params available on each rank (MPI_Bcast if overhead too large)
   
   // Run one step serially to load input data, initialise grid, and write MPI-IO snapshot
   if (LibGeoDecomp::MPILayer().rank() == 0)
