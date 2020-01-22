@@ -113,18 +113,19 @@ public:
 template<typename COORD_MAP>
 void Cell::update(const COORD_MAP& neighborhood, unsigned nanoStep)
 {
+  initialise_grid_value_updates(neighborhood);
   set_global_timefactor();
   
   // Hydrological and flow routing processes
   // Add water to the catchment from rainfall input file
-  catchment_waterinputs(neighborhood);
+  //catchment_waterinputs(neighborhood);
   // Distribute the water with the LISFLOOD Cellular Automaton algorithm
-  flow_route_x(neighborhood);
-  flow_route_y(neighborhood);
+  //flow_route_x(neighborhood);
+  //flow_route_y(neighborhood);
   // Calculate the new water depths in the catchment
-  depth_update(neighborhood);
+  //depth_update(neighborhood);
   // Water outputs from edges/catchment outlet 
-  water_flux_out(neighborhood);
+  //water_flux_out(neighborhood);
 }
 
 
@@ -196,7 +197,7 @@ void Cell::catchment_water_input_and_hydrology(const COORD_MAP& neighborhood, do
       
   */
 	
-  water_depth = water_depth;
+  if(celltype == EDGE_WEST){ water_depth = water_depth + 0.01; }  // referring to new water_depth, which has already been added to by other functions during this update cycle
   
       /*
 	}
@@ -286,7 +287,7 @@ void LSDCatchmentModel::zero_values()
 	  elev[i][j] = -9999;
 	  bedrock[i][j] = -9999;
 	  init_elevs[i][j] = elev[i][j];
-	  water_depth[i][j] = 0;
+	  water_depth[i][j] = 0.2;
 	  index[i][j] = -9999;
 	  inputpointsarray[i][j] = false;
 
@@ -301,50 +302,13 @@ void LSDCatchmentModel::zero_values()
 	      vel_dir[i][j][n]=0;
 	    }
 
-	  Vsusptot[i][j] = 0;
 	  rfarea[i][j] = 1;
 	}
     }
-
-  // These arrays are different dimensions
-  // So they need to be zeroed differently
-  for (unsigned i=0; i<=imax; i++)
-    {
-      for(unsigned j=0; j<=jmax; j++)
-	{
-	  if (vegetation_on)
-	    {
-	      veg[i][j][0] = 0;// elevation
-	      veg[i][j][1] = 0; // densitj
-	      veg[i][j][2] = 0; // jw density
-	      veg[i][j][3] = 0; // height
-	    }
-	  edge[i][j] = 0;
-	  edge2[i][j] = 0;
-	}
-    }
-
-  for(unsigned i=1; i<((jmax*imax)/LIMIT); i++)
-    {
-      if (!hydro_only)
-	{
-	  for(unsigned j=0; j<=G_MAX; j++)
-	    {
-	      grain[i][j] = 0;
-	    }
-	  for(int z=0; z <= 9; z++)
-	    {
-	      for(unsigned j=0; j <= G_MAX-2; j++)
-		{
-		  strata[i][z][j] =0;
-		}
-	    }
-	}
-
-      catchment_input_x_coord[i] = 0;
-      catchment_input_y_coord[i] = 0;
-    }
+   
 }
+
+
 
 
 
@@ -387,18 +351,14 @@ void LSDCatchmentModel::initialise_arrays()
 
   vel_dir = TNT::Array3D<double> (imax+2, jmax+2, 9, 0.0);
 
-  Vsusptot = TNT::Array2D<double> (imax+2,jmax+2, 0.0);
-
   // Will come back to this later - DAV
   //if (vegetation_on)
   //{
-    veg = TNT::Array3D<double> (imax+1, jmax+1, 4, 0.0);
+  veg = TNT::Array3D<double> (imax+1, jmax+1, 4, 0.0);
   //}
-
-
-  //cross_scan = TNT::Array2D<int> (imax+2,jmax+2, 0);
-  down_scan = TNT::Array2D<int> (jmax+2, imax+2, 0);
-
+  
+  
+  
   // line to stop max time step being greater than rain time step
   if (rain_data_time_step < 1) rain_data_time_step = 1;
   if (max_time_step / 60 > rain_data_time_step)
@@ -432,7 +392,7 @@ void LSDCatchmentModel::initialise_arrays()
   edge2 = TNT::Array2D<double> (imax+1,jmax+1, 0.0);
 
   Tau = TNT::Array2D<double> (imax+2,jmax+2, 0.0);
-
+  
   catchment_input_x_coord = std::vector<int> (jmax * imax, 0);
   catchment_input_y_coord = std::vector<int> (jmax * imax, 0);
 
@@ -454,27 +414,9 @@ void LSDCatchmentModel::initialise_arrays()
   nActualGridCells = std::vector<int> (rfnum + 1);
   catchment_input_counter = std::vector<int> (rfnum + 1);
 
-  // Only need these ones for erosion-enabled simulation runs
-  if (!hydro_only)
-  {
-    sr = TNT::Array3D<double> (imax + 2, jmax + 2, 10, 0.0);
-    sl = TNT::Array3D<double> (imax + 2, jmax + 2, 10, 0.0);
-    su = TNT::Array3D<double> (imax + 2, jmax + 2, 10, 0.0);
-    sd = TNT::Array3D<double> (imax + 2, jmax + 2, 10, 0.0);
-    ss = TNT::Array2D<double> (imax + 2, jmax + 2, 0.0);
-
-    strata = TNT::Array3D<double> ( ((imax+2)*(jmax+2))/LIMIT , 10, G_MAX+1, 0.0);
-    grain = TNT::Array2D<double> ( ((2+imax)*(jmax+2))/LIMIT, G_MAX+1 , 0.0);
-    temp_grain = std::vector<double> (G_MAX+1, 0.0);
-  }
-  // Initialise suspended fraction vector
-  // Tells program whether sediment is suspended fraction or not
-  isSuspended = std::vector<bool>(G_MAX+1, false);
-  //fallVelocity = std::vector<double>(G_MAX+1, 0.0);
-  //set_fall_velocities();
-  // Not entirely sure this is necessary? - TODO DAV
+  // Erosion / suspension arrays still to port
+  
   zero_values();
-
 }
 
 
@@ -510,7 +452,7 @@ void Cell::water_flux_out(const COORD_MAP& neighborhood)
   case Cell::CORNER_NE:
   case Cell::CORNER_SE:
   case Cell::CORNER_SW:
-    if (here_old.water_depth > LSDCatchmentModel::water_depth_erosion_threshold) water_depth = LSDCatchmentModel::water_depth_erosion_threshold;
+    if (thisCell_old.water_depth > LSDCatchmentModel::water_depth_erosion_threshold) water_depth = LSDCatchmentModel::water_depth_erosion_threshold;
     break;
   default:
     std::cout << "\n\n WARNING: no water_flux_out rule specified for cell type " << celltype << "\n\n";
@@ -534,30 +476,30 @@ void Cell::flow_route_x(const COORD_MAP& neighborhood)
 {
   double hflow;
   double tempslope;
-  double west_elevation;
-  double west_water_depth;
+  double west_elevation_old;
+  double west_water_depth_old;
   double local_time_factor = set_local_timefactor();
 
   switch (celltype){
   case Cell::INTERNAL:
   case Cell::EDGE_NORTH:
   case Cell::EDGE_SOUTH:
-    west_elevation = west_old.elevation;
-    west_water_depth = west_old.water_depth;
-    tempslope = ((west_elevation + west_water_depth) - (here_old.elevation + here_old.water_depth)) / LSDCatchmentModel::DX;
+    west_elevation_old = west_old.elevation;
+    west_water_depth_old = west_old.water_depth;
+    tempslope = ((west_elevation_old + west_water_depth_old) - (thisCell_old.elevation + thisCell_old.water_depth)) / LSDCatchmentModel::DX;
     break;
   case Cell::EDGE_WEST:
   case Cell::CORNER_NW:
   case Cell::CORNER_SW:
-    west_elevation = LSDCatchmentModel::no_data_value;
-    west_water_depth = 0.0;
+    west_elevation_old = LSDCatchmentModel::no_data_value;
+    west_water_depth_old = 0.0;
     tempslope = LSDCatchmentModel::edgeslope;
     break;
   case Cell::EDGE_EAST:
   case Cell::CORNER_NE:
   case Cell::CORNER_SE:
-    west_elevation = west_old.elevation;
-    west_water_depth = west_old.water_depth;
+    west_elevation_old = west_old.elevation;
+    west_water_depth_old = west_old.water_depth;
     tempslope = LSDCatchmentModel::edgeslope;
     break;
   default:
@@ -566,14 +508,14 @@ void Cell::flow_route_x(const COORD_MAP& neighborhood)
   }
 
 
-  if (here_old.water_depth > 0 || west_water_depth > 0)
+  if (thisCell_old.water_depth > 0 || west_water_depth_old > 0)
     {
-      hflow = std::max(here_old.elevation + here_old.water_depth, west_elevation + west_water_depth) - std::max(here_old.elevation, west_elevation);
+      hflow = std::max(thisCell_old.elevation + thisCell_old.water_depth, west_elevation_old + west_water_depth_old) - std::max(thisCell_old.elevation, west_elevation_old);
       if (hflow > LSDCatchmentModel::hflow_threshold)
 	{
 	  update_qx(neighborhood, hflow, tempslope, local_time_factor);
 	  froude_check(qx, hflow);
-	  discharge_check(neighborhood, qx, west_water_depth, LSDCatchmentModel::DX);
+	  discharge_check(neighborhood, qx, west_water_depth_old, LSDCatchmentModel::DX);
 	}
       else
 	{
@@ -614,30 +556,30 @@ void Cell::flow_route_y(const COORD_MAP& neighborhood)
 {
   double hflow;
   double tempslope;
-  double north_elevation;
-  double north_water_depth;
+  double north_elevation_old;
+  double north_water_depth_old;
   double local_time_factor = set_local_timefactor();
 
   switch (celltype){
   case Cell::INTERNAL:
   case Cell::EDGE_WEST:
   case Cell::EDGE_EAST:
-    north_elevation = north_old.elevation;
-    north_water_depth = north_old.water_depth;
-    tempslope = ((north_elevation + north_water_depth) - (here_old.elevation + here_old.water_depth)) / LSDCatchmentModel::DY;
+    north_elevation_old = north_old.elevation;
+    north_water_depth_old = north_old.water_depth;
+    tempslope = ((north_elevation_old + north_water_depth_old) - (thisCell_old.elevation + thisCell_old.water_depth)) / LSDCatchmentModel::DY;
     break;
   case Cell::EDGE_NORTH:
   case Cell::CORNER_NW:
   case Cell::CORNER_NE:
-    north_elevation = LSDCatchmentModel::no_data_value;
-    north_water_depth = 0.0;
+    north_elevation_old = LSDCatchmentModel::no_data_value;
+    north_water_depth_old = 0.0;
     tempslope = LSDCatchmentModel::edgeslope;
     break;
   case Cell::EDGE_SOUTH:
   case Cell::CORNER_SW:
   case Cell::CORNER_SE:
-    north_elevation = north_old.elevation;
-    north_water_depth = north_old.water_depth;
+    north_elevation_old = north_old.elevation;
+    north_water_depth_old = north_old.water_depth;
     tempslope = LSDCatchmentModel::edgeslope;
     break;
   default:
@@ -646,14 +588,14 @@ void Cell::flow_route_y(const COORD_MAP& neighborhood)
   }
 
 
-  if (here_old.water_depth > 0 || north_water_depth > 0)
+  if (thisCell_old.water_depth > 0 || north_water_depth_old > 0)
     {
-      hflow = std::max(here_old.elevation + here_old.water_depth, north_elevation + north_water_depth) - std::max(here_old.elevation, north_elevation);
+      hflow = std::max(thisCell_old.elevation + thisCell_old.water_depth, north_elevation_old + north_water_depth_old) - std::max(thisCell_old.elevation, north_elevation_old);
       if (hflow > LSDCatchmentModel::hflow_threshold)
 	{
 	  update_qy(neighborhood, hflow, tempslope, local_time_factor);
 	  froude_check(qy, hflow);
-	  discharge_check(neighborhood, qy, north_water_depth, LSDCatchmentModel::DY);
+	  discharge_check(neighborhood, qy, north_water_depth_old, LSDCatchmentModel::DY);
 	}
       else
 	{
@@ -694,8 +636,8 @@ void Cell::flow_route_y(const COORD_MAP& neighborhood)
 template<typename COORD_MAP>
 void Cell::depth_update(const COORD_MAP& neighborhood)
 {
-  double east_qx;
-  double south_qy;
+  double east_qx_old;
+  double south_qy_old;
 
   double local_time_factor = set_local_timefactor();
 
@@ -704,26 +646,26 @@ void Cell::depth_update(const COORD_MAP& neighborhood)
   case Cell::EDGE_NORTH:
   case Cell::EDGE_WEST:
   case Cell::CORNER_NW:
-    east_qx = east_old.qx;
-    south_qy = south_old.qy;
-    update_water_depth(neighborhood, east_qx, south_qy, local_time_factor);
+    east_qx_old = east_old.qx;
+    south_qy_old = south_old.qy;
+    update_water_depth(neighborhood, east_qx_old, south_qy_old, local_time_factor);
     break;
   case Cell::EDGE_EAST:
   case Cell::CORNER_NE:
-    east_qx = 0.0;
-    south_qy = south_old.qy;
-    update_water_depth(neighborhood, east_qx, south_qy, local_time_factor);
+    east_qx_old = 0.0;
+    south_qy_old = south_old.qy;
+    update_water_depth(neighborhood, east_qx_old, south_qy_old, local_time_factor);
     break;
   case Cell::EDGE_SOUTH:
   case Cell::CORNER_SW:
-    east_qx = east_old.qx;
-    south_qy = 0.0;
-    update_water_depth(neighborhood, east_qx, south_qy, local_time_factor);
+    east_qx_old = east_old.qx;
+    south_qy_old = 0.0;
+    update_water_depth(neighborhood, east_qx_old, south_qy_old, local_time_factor);
     break;
   case Cell::CORNER_SE:
-    east_qx = 0.0;
-    south_qy = 0.0;
-    update_water_depth(neighborhood, east_qx, south_qy, local_time_factor);
+    east_qx_old = 0.0;
+    south_qy_old = 0.0;
+    update_water_depth(neighborhood, east_qx_old, south_qy_old, local_time_factor);
     break;
   case Cell::NODATA:
     water_depth = 0.0;
@@ -734,11 +676,26 @@ void Cell::depth_update(const COORD_MAP& neighborhood)
   }
 }
 
-  
+
+// The point of this function is to initialise grid values of any quantities that
+// either need to be kept constant or that have multiple partial updates made to
+// them during each time step. By taking care of initialising such grid values in
+// this function based on their old values as read through the neighborhood object,
+// other functions can add to them *in any order* by always reading from and adding
+// to the new value, i.e. without needing to consider whether they are the first
+// function to update the value (which would need to read the neighborhood object
+// to access the old value). 
 template<typename COORD_MAP>
-void Cell::update_water_depth(const COORD_MAP& neighborhood, double east_qx, double south_qy, double local_time_factor)
+void Cell::initialise_grid_value_updates(const COORD_MAP& neighborhood)
 {
-  water_depth = 0.001 + here_old.water_depth + local_time_factor * ( (east_qx - here_old.qx)/LSDCatchmentModel::DX + (south_qy - here_old.qy)/LSDCatchmentModel::DY );
+  water_depth = thisCell_old.water_depth;
+}
+
+
+template<typename COORD_MAP>
+void Cell::update_water_depth(const COORD_MAP& neighborhood, double east_qx_old, double south_qy_old, double local_time_factor)
+{
+  water_depth = 0.001 + thisCell_old.water_depth + local_time_factor * ( (east_qx_old - thisCell_old.qx)/LSDCatchmentModel::DX + (south_qy_old - thisCell_old.qy)/LSDCatchmentModel::DY );
 }
 
 
@@ -746,14 +703,14 @@ void Cell::update_water_depth(const COORD_MAP& neighborhood, double east_qx, dou
 template<typename COORD_MAP>
 void Cell::update_qx(const COORD_MAP& neighborhood, double hflow, double tempslope, double local_time_factor)
 {
-  update_q(here_old.qx, qx, hflow, tempslope, local_time_factor);
+  update_q(thisCell_old.qx, qx, hflow, tempslope, local_time_factor);
 }
 
 
 template<typename COORD_MAP>
 void Cell::update_qy(const COORD_MAP& neighborhood, double hflow, double tempslope, double local_time_factor)
 {
-  update_q(here_old.qy, qy, hflow, tempslope, local_time_factor);
+  update_q(thisCell_old.qy, qy, hflow, tempslope, local_time_factor);
 }
 
 
@@ -772,7 +729,7 @@ void Cell::update_q(const double &q_old, double &q_new, double hflow, double tem
   // - only in steep catchments really
 void Cell::froude_check(double &q, double hflow)
 {
-  if ((std::abs(q / hflow) / std::sqrt(Cell::gravity * hflow)) > LSDCatchmentModel::froude_limit) // correctly reads newly calculated value of q, not here_old.q
+  if ((std::abs(q / hflow) / std::sqrt(Cell::gravity * hflow)) > LSDCatchmentModel::froude_limit) // correctly reads newly calculated value of q, not thisCell_old.q
     {
       q = std::copysign(hflow * (std::sqrt(Cell::gravity*hflow) * LSDCatchmentModel::froude_limit), q);
     }
@@ -787,9 +744,9 @@ void Cell::discharge_check(const COORD_MAP& neighborhood, double &q, double neig
   double local_time_factor = set_local_timefactor();
   double criterion_magnitude = std::abs(q * local_time_factor / Delta);
 
-  if (q > 0 && criterion_magnitude > (here_old.water_depth / 4.0))
+  if (q > 0 && criterion_magnitude > (thisCell_old.water_depth / 4.0))
     {
-      q = ((here_old.water_depth * Delta) / 5.0) / local_time_factor;
+      q = ((thisCell_old.water_depth * Delta) / 5.0) / local_time_factor;
     }
   else if (q < 0 && criterion_magnitude > (neighbour_water_depth / 4.0))
     {

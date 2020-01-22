@@ -14,7 +14,7 @@ class Cell
   
   // refactor - Should replace these defines with type alias declarations (= C++11 template typedef)
   // refactor - check that grid orientation makes sense (write test)
-#define here_old neighborhood[LibGeoDecomp::Coord<2>( 0, 0)]
+#define thisCell_old neighborhood[LibGeoDecomp::Coord<2>( 0, 0)]
 #define west_old neighborhood[LibGeoDecomp::Coord<2>(-1, 0)]
 #define east_old neighborhood[LibGeoDecomp::Coord<2>( 1, 0)]
 #define north_old neighborhood[LibGeoDecomp::Coord<2>( 0, -1)]
@@ -63,6 +63,7 @@ public:
   void froude_check(double &q, double hflow);
   void update_q(const double &q_old, double &q_new, double hflow, double tempslope, double local_time_factor);
   
+  template<typename COORD_MAP> void initialise_grid_value_updates(const COORD_MAP& neighborhood);
   template<typename COORD_MAP> void update(const COORD_MAP& neighborhood, unsigned nanoStep);
   template<typename COORD_MAP> void catchment_waterinputs(const COORD_MAP& neighborhood);
   template<typename COORD_MAP> void catchment_water_input_and_hydrology(const COORD_MAP& neighborhood, double local_time_factor);
