@@ -9,7 +9,7 @@ To build the HPC version of HAIL-CAESAR you will need the following installed:
 - g++ (more recent than version 6)
 - an MPI library (e.g. MPICH, OpenMPI, ...)
 - Boost
-- LibGeoDecomp (currently the hail-caesar branch, available from https://github.com/aproeme/libgeodecomp)
+- LibGeoDecomp
 
 
 # Building
@@ -20,7 +20,7 @@ To build the HPC version of HAIL-CAESAR you will need the following installed:
 
 You will be able to run the resulting executable ./bin/HAIL-CAESAR.mpi with the relevant parallel application launcher command (`mpirun`, `mpiexec`, `aprun`, etc.) as follows, e.g. to run on 32 nodes = 768 cores on ARCHER: 
 
-```aprun -n 768 HAIL-CAESAR.mpi path_to_params_file params_filename```
+```aprun -n 768 HAIL-CAESAR.mpi params_filename```
 
 The params file is used as in the original version of HAIL-CAESAR as described as http://hail-caesar.readthedocs.io/en/latest/
 
