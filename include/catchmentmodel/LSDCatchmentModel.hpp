@@ -191,6 +191,7 @@ public:
   /// or every certain number of timesteps.
   void zero_values();
 
+  
   // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
   // CATCHMENT MORPHOMETRICS
   // Methods that return information about
@@ -293,17 +294,6 @@ public:
   /// @brief Evaporation routine.
   void evaporate(double time);
 
-  /// @brief Calculates which cells have water content and marks these
-  /// cells with a flag.
-  /// @detail By creating a mask of cells that contain water, later calculations
-  /// can be sped up by only iterating over cells that contain water (and there
-  /// -fore will have discharges, water to route, erosion occuring etc.)
-  /// Interesting to see how useful this is in catchments where majority of
-  /// cells contain water, i.e. during flood events, etc. and whether there
-  /// is worth to this method which has overhead but ultimately reduces
-  /// compute time, especially in situations where there is large areas of
-  /// catchment with minimal water content.
-  void scan_area();
 
   /// @brief Calculates water exiting from the catchment boundaries (on all
   /// four sides of the domain, regardles of where 'true' catchment outlet
@@ -316,21 +306,30 @@ public:
   /// during periods of low water flow. (e.g. inter-storm periods.)
   void set_inputoutput_diff();
 
+
+  
   // skipped vegetation growth, see original code
 
-
+  
+  TNT::Array2D<double> elev;
+  TNT::Array2D<double> water_depth;
+  
   // simulation options
   int no_of_iterations = 100;
   std::string simulator = "hipar";
     
-
+  /// set by ncols and nrows
+  unsigned int jmax, imax;
+  double xll, yll;
+  static double no_data_value;
+  
   // visualisation options
-  bool write_elevation_ppm = false;
-  bool write_elevation_bov = false;
-  bool write_elevation_visit = false;
-  bool write_water_depth_ppm = false;
-  bool write_water_depth_bov = false;
-  bool write_water_depth_visit = false;
+  bool elevation_ppm = false;
+  bool elevation_bov = false;
+  bool elevation_visit = false;
+  bool water_depth_ppm = false;
+  bool water_depth_bov = false;
+  bool water_depth_visit = false;
   int elevation_ppm_interval = 1;
   int elevation_bov_interval = 1; 
   int elevation_visit_interval = 1;
@@ -348,45 +347,13 @@ public:
 
   private:
   
-  bool uniquefilecheck = false;
-
   //constants
   const double root = 7.07;
   const double gravity = 9.81;
   const float g = 9.81F;
-  const float kappa = 0.4F;
-  const int ACTIVE_FACTOR=1;
-  const int TRUE=1;
-  const int FALSE=0;
-  const unsigned int G_MAX=10;
-  const std::array<int, 9> deltaX = {{0,  0,  1,  1,  1,  0, -1, -1, -1}};
-  const std::array<int, 9> deltaY = {{0, -1, -1,  0,  1,  1,  1,  0, -1}};
-
+  
   static double water_depth_erosion_threshold;
-  int input_time_step = 60;
-  int number_of_points = 0;
-  double globalsediq = 0;
   double time_1 = 1;
-  double save_time = 0;
-  double creep_time = 1;
-  double creep_time2 = 1;
-  double creep_time3 = 1;
-  double grass_grow_interval = 1;
-
-  double soil_erosion_time = 1;
-  double soil_development_time = 1;
-
-  double bedrock_erosion_threshold = 0;
-  double bedrock_erosion_rate = 0;
-  double p_b = 1.5;  // detach capacity exponent from CHILD
-  double bedrock_erodibility_coeff_ke = 0.002;
-
-  ///int tot_number_of_tracer_points=0;
-  int input_type_flag=0; // 0 is water input from points, 1 is input from hydrograph or rainfall file.
-  double failureangle=45;
-  double saveinterval=1000;
-  int counter=0;
-
   double waterinput = 0;
   double waterOut = 0;
   double input_output_difference = 0;
@@ -396,32 +363,11 @@ public:
   /// no. of rainfall cells
   unsigned rfnum = 1;
 
-  /// set by ncols and nrows
-  unsigned int jmax, imax;
-  double xll, yll;
-  static double no_data_value;
-
   int maxcycle = 1000;
 
   double ERODEFACTOR=0.05;
   static double DX;
   static double DY;
-  /// memory limit
-  int LIMIT=1;
-  double MIN_Q=0.01;
-  double MIN_Q_MAXVAL=1000.0;
-  double CREEP_RATE=0.0025;
-  double SOIL_RATE = 0.0025;
-  double active=0.2;
-  int grain_array_tot =1 ;
-
-  /// Number of passes for edge smoothing filter
-  double edge_smoothing_passes = 100.0;
-  /// Number of cells to shift lat erosion downstream
-  double downstream_shift= 5.0;
-  /// Max difference allowed in cross channel smoothing of edge values
-  double lateral_cross_channel_smoothing = 0.0001;
-  double lateral_constant=0.0000002;
 
   static double time_factor;
   std::vector<double> j, jo, j_mean, old_j_mean, new_j_mean;
@@ -431,129 +377,29 @@ public:
   double baseflow = 0.00000005; //end of hyd model variables usually 0.0000005 changed 2/11/05
   // Reverted to match CL 1.8f 17/08/16 - DV
 
-  double cycle =0;  // can't initalise static vars in header file!
-  double rain_factor = 1;
-  double sediQ = 0;
-
-  // speed in which vegetation reaches full maturity in year
-  double grow_grass_time = 0;
-  double duneupdatetime = 0;
-
+  double cycle = 0; 
   double output_file_save_interval = 60;
-  double min_time_step = 0;
-  double vegTauCrit = 100;
-
   int max_time_step = 0;
-  int dune_mult = 5;
-  double dune_time = 1;
-  double max_vel = 5;
-  double sand_out = 0;
+  
   static double maxdepth;
   static double courant_number;
-  double erode_call = 0;
-  double erode_mult = 1;
-  double lateralcounter = 1;
   static double edgeslope;
-  double chann_lateral_erosion = 20.0; // formerly 'bed_proportion =0.01'
-  double veg_lat_restriction = 0.1;
-
   static double froude_limit;
-  double recirculate_proportion = 1;
-
-  double Csuspmax = 0.05; // max concentration  of SS allowed in a cell (proportion)
   static double hflow_threshold;
 
-  // KAtharine
-  int variable_m_value_flag = 0;
-
-  // TO DO: DAV - these could be read from an input file.
-  // Swale grainsizes
-  double d1=0.000065;
-  double d2=0.001;
-  double d3=0.002;
-  double d4=0.004;
-  double d5=0.008;
-  double d6=0.016;
-  double d7=0.032;
-  double d8=0.064;
-  double d9=0.128;
-
-  // std::array<double, 11> dprop = {{0.0, 0.144, 0.022, 0.019, 0.029, 0.068, 0.146, 0.22, 0.231, 0.121, 0.0}}; // Default
-  double dprop[11] = {0.0, 0.05, 0.05, 0.15, 0.225, 0.25, 0.1, 0.075, 0.05, 0.05, 0.0}; // Swale
-
-  double previous;
-  int hours = 0;
-  double new_cycle = 0;
-  double old_cycle = 0;
   double tx = 60;
-  double Tx = 0;
-  double tlastcalc = 0;
-  double Qs_step = 0;
-  double Qs_hour = 0;
-  double Qs_over = 0;
-  double Qs_last = 0;
-  double Qw_newvol = 0;
-  double Qw_oldvol = 0;
-  double Qw_lastvol = 0;
-  double Qw_stepvol = 0;
-  double Qw_hourvol = 0;
-  double Qw_hour = 0;
-  double Qw_overvol = 0;
-  double temptotal = 0;
-  double old_sediq = 0;
 
-  double temptot = 0;
-
-  std::vector<double> sum_grain, sum_grain2;
-  std::vector<double> old_sum_grain,old_sum_grain2;
-  std::vector<double> Qg_step, Qg_step2, Qg_hour, Qg_hour2;
-  std::vector<double> Qg_over, Qg_over2, Qg_last,Qg_last2;
-
-  TNT::Array2D<double> elev;
-  TNT::Array2D<double> bedrock;
-  TNT::Array2D<double> init_elevs;
-  TNT::Array2D<double> water_depth;
-  TNT::Array2D<double> area;
-  TNT::Array2D<double> tempcreep;
-  TNT::Array2D<double> Tau;
-  TNT::Array2D<double> Vel;
-  TNT::Array2D<double> qx;
-  TNT::Array2D<double> qy;
-  TNT::Array2D<double> qxs;
-  TNT::Array2D<double> qys;
-  // TODO - these are for the dune model which is as of yet unimplemented
-  TNT::Array2D<double> area_depth;
-  TNT::Array2D<double> sand;
-  TNT::Array2D<double> elev2;
-  TNT::Array2D<double> sand2;
-  TNT::Array2D<double> grain;
-  TNT::Array2D<double> elev_diff;
-
-  TNT::Array2D<int> index;
-  TNT::Array2D<int> down_scan;
   TNT::Array2D<int> rfarea;
 
-  TNT::Array2D<bool> inputpointsarray;
 
   std::vector<int> catchment_input_x_coord;
   std::vector<int> catchment_input_y_coord;
 
-  TNT::Array3D<double> vel_dir;
-  TNT::Array3D<double> strata;
+  TNT::Array1D<double> vel_dir;
 
   std::vector<double> hourly_m_value;
-  std::vector<double> temp_grain;
   std::vector< std::vector<float> > hourly_rain_data;
-  TNT::Array3D<double> veg;
-  TNT::Array2D<double> edge, edge2; //TJC 27/1/05 array for edges
   std::vector<double> old_j_mean_store;
-  TNT::Array3D<double> sr, sl, su, sd;
-  TNT::Array2D<double> ss;
-
-  // MJ global vars
-  std::vector<double> fallVelocity;
-  std::vector<bool> isSuspended;
-  TNT::Array2D<double> Vsusptot;
 
 
   std::vector<int> nActualGridCells;
@@ -566,49 +412,26 @@ public:
   double Jw_overvol = 0.0;
   double k_evap = 0.0;
 
-  // sedi tpt flags
-  bool einstein = false;
-  bool wilcock = false;
-  int div_inputs = 1;
   double rain_data_time_step = 60; // time step for rain data - default is 60.
 
   // lisflood caesar adaptation globals
   std::vector<int> catchment_input_counter;
   int totalinputpoints = 0;
 
-  /// Soil generation variables
-  double P1, b1, k1, c1, c2, k2, c3, c4;
-
   /// Option Bools
-  bool soildevoption = false;
-  bool suspended_opt = false;
   bool jmeaninputfile_opt = false;
   // This is for reading discharge direct from input file - DAV 2/2016
   bool recirculate_opt = false;
   bool reach_mode_opt = false;
-  bool dunes_opt = false;
-  bool bedrock_lower_opt = false;
-  bool physical_weather_opt = false;
-  bool chem_weath_opt = false;
   bool allow_in_out_diff = true;
 
-  bool soil_j_mean_depends_on = false;
   bool rainfall_data_on = false;
   bool hydro_only = false;
-  bool vegetation_on = false;
-  bool bedrock_layer_on = false;
-  bool lateral_erosion_on = false;
   bool spatially_var_rainfall = false;
-  bool graindata_from_file = false;
-
   bool spatially_complex_rainfall = false;
-
-  int erode_timestep_type = 0;  // 0 for default based on erosion amount, 1 for basedon hydro timestep
-  int hydro_timestep_type = 0;  // 0 for default
 
   // Bools for writing out files
   bool write_elev_file = false;
-  bool write_grainsz_file = false;
   bool write_params_file = false;
   bool write_flowvel_file = false;
   bool write_waterd_file = false;
@@ -616,30 +439,16 @@ public:
 
   /// input file names
   std::string rainfall_data_file;
-  std::string grain_data_file;
-  std::string bedrock_data_file;
 
   /// output file names
   std::string elev_fname;
-  std::string grainsize_fname;
   std::string params_fname;
   std::string waterdepth_fname;
   std::string flowvel_fname;
   std::string hydroindex_fname;
   std::string timeseries_fname;
   std::string elevdiff_fname;
-  std::string raingrid_fname;
   std::string runoffgrid_fname;
-  
-  bool DEBUG_print_cycle_on = false;
-  bool DEBUG_write_raingrid = false;
-  bool DEBUG_write_runoffgrid = false;
-
-  int timeseries_interval;
-  float run_time_start;
-
-  int tempcycle = 0;
-  
   
   std::vector< std::vector<float> > raingrid;	 // this is for the rainfall data file
 

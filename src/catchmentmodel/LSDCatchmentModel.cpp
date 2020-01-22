@@ -9,12 +9,8 @@
 #include <libgeodecomp/io/tracingwriter.h>
 #include <libgeodecomp/io/simpleinitializer.h>
 #include <libgeodecomp/parallelization/serialsimulator.h>
-#include <libgeodecomp/io/asciiwriter.h>
-#include <libgeodecomp/io/mpiiowriter.h>
 #include <libgeodecomp/communication/typemaps.h>
 #include <libgeodecomp/io/collectingwriter.h>
-#include <libgeodecomp/io/mpiioinitializer.h>
-#include <libgeodecomp/io/parallelmpiiowriter.h>
 #include <libgeodecomp/parallelization/stripingsimulator.h>
 #include <libgeodecomp/parallelization/hiparsimulator.h>
 #include <libgeodecomp/loadbalancer/noopbalancer.h>
@@ -118,14 +114,14 @@ void Cell::update(const COORD_MAP& neighborhood, unsigned nanoStep)
   
   // Hydrological and flow routing processes
   // Add water to the catchment from rainfall input file
-  //catchment_waterinputs(neighborhood);
+  catchment_waterinputs(neighborhood);
   // Distribute the water with the LISFLOOD Cellular Automaton algorithm
-  //flow_route_x(neighborhood);
-  //flow_route_y(neighborhood);
+  flow_route_x(neighborhood);
+  flow_route_y(neighborhood);
   // Calculate the new water depths in the catchment
-  //depth_update(neighborhood);
+  depth_update(neighborhood);
   // Water outputs from edges/catchment outlet 
-  //water_flux_out(neighborhood);
+  water_flux_out(neighborhood);
 }
 
 
@@ -276,88 +272,30 @@ void Cell::catchment_water_input_and_hydrology(const COORD_MAP& neighborhood, do
 
 
 
+
+
 void LSDCatchmentModel::zero_values()
 {
-  for(unsigned i=0; i <= imax+1; i++)
+  for(unsigned i=0; i < imax; i++)
     {
-      for(unsigned j=0; j <= jmax+1; j++)
+      for(unsigned j=0; j < jmax; j++)
 	{
-	  Vel[i][j] = 0;
-	  area[i][j] = 0;
 	  elev[i][j] = -9999;
-	  bedrock[i][j] = -9999;
-	  init_elevs[i][j] = elev[i][j];
-	  water_depth[i][j] = 0.2;
-	  index[i][j] = -9999;
-	  inputpointsarray[i][j] = false;
-
-	  qx[i][j] = 0;
-	  qy[i][j] = 0;
-
-	  qxs[i][j] = 0;
-	  qys[i][j] = 0;
-
-	  for(int n=0; n<=8; n++)
-	    {
-	      vel_dir[i][j][n]=0;
-	    }
-
+	  water_depth[i][j] = 0.0;
 	  rfarea[i][j] = 1;
 	}
     }
-   
 }
 
 
 
 
 
-// Initialise the arrays (as done in initialise() )
-// Not sure the point of having them declared in header file if you
-// can't resize them...surely this is duplicating array creation?? DV
-// TO DO DAV - address above comment
-
 // Initialise the relevant arrays
 void LSDCatchmentModel::initialise_arrays()
 {
-  std::cout << "Cartesian imax (no. of rows): " << imax << \
-               " Cartesian jmax (no. of cols): " << jmax << std::endl;
-
-  // Need to change this so it does not waste memory assigning arrays
-  // when running in hydro mode etc.
-  elev = TNT::Array2D<double> (imax+2,jmax+2, -9999);
-  water_depth = TNT::Array2D<double> (imax+2,jmax+2, 0.0);
-
-  // Cast to int and then double, what?
-  //old_j_mean_store = new double[(int)((maxcycle*60)/input_time_step)+10];
-  old_j_mean_store = std::vector<double>
-    (static_cast<int>((maxcycle*60)/input_time_step)+10);
-
-  qx = TNT::Array2D<double> (imax + 2, jmax + 2, 0.0);
-  qy = TNT::Array2D<double> (imax + 2, jmax + 2, 0.0);
-
-  qxs = TNT::Array2D<double> (imax + 2, jmax + 2, 0.0);
-  qys = TNT::Array2D<double> (imax + 2, jmax + 2, 0.0);
-
-  Vel = TNT::Array2D<double> (imax + 2, jmax + 2, 0.0);
-
-  area = TNT::Array2D<double> (imax+2, jmax + 2, 0.0);
-  index = TNT::Array2D<int> (imax +2, jmax + 2, 0);
-  elev_diff = TNT::Array2D<double> (imax + 2, jmax + 2);
-
-  bedrock = TNT::Array2D<double> (imax+2, jmax+2, -9999);
-  tempcreep = TNT::Array2D<double> (imax+2,jmax+2);
-  init_elevs = TNT::Array2D<double> (imax+2,jmax+2, -9999);
-
-  vel_dir = TNT::Array3D<double> (imax+2, jmax+2, 9, 0.0);
-
-  // Will come back to this later - DAV
-  //if (vegetation_on)
-  //{
-  veg = TNT::Array3D<double> (imax+1, jmax+1, 4, 0.0);
-  //}
-  
-  
+  elev = TNT::Array2D<double> (imax,jmax, -9999); 
+  water_depth = TNT::Array2D<double> (imax,jmax, 0.0);
   
   // line to stop max time step being greater than rain time step
   if (rain_data_time_step < 1) rain_data_time_step = 1;
@@ -370,15 +308,6 @@ void LSDCatchmentModel::initialise_arrays()
   //     is-there-a-way-to-specify-the-dimensions-of-a-nested-stl-vector-c
   // DEBUG
 
-  #ifdef DEBUG
-  long int xdim = static_cast<int>(maxcycle * (60 / rain_data_time_step)) + 100;
-  std::cout << "Size of rain vector: " << xdim << std::endl;
-
-  int short_xdim = static_cast<int>(maxcycle * (60 / rain_data_time_step)) \
-                    + 100;
-  std::cout << "Int size of rain vector: " << short_xdim << std::endl;
-  #endif
-
   hourly_rain_data = std::vector< std::vector<float> >
     ( (static_cast<int>(maxcycle * (60 / rain_data_time_step)) + 100),
                         vector<float>(rfnum+1) );
@@ -386,17 +315,9 @@ void LSDCatchmentModel::initialise_arrays()
   hourly_m_value = std::vector<double>
     (static_cast<int>(maxcycle * (60 / rain_data_time_step)) + 100);
 
-  inputpointsarray = TNT::Array2D <bool> (imax + 2, jmax + 2);
-
-  edge = TNT::Array2D<double> (imax+1,jmax+1, 0.0);
-  edge2 = TNT::Array2D<double> (imax+1,jmax+1, 0.0);
-
-  Tau = TNT::Array2D<double> (imax+2,jmax+2, 0.0);
-  
   catchment_input_x_coord = std::vector<int> (jmax * imax, 0);
   catchment_input_y_coord = std::vector<int> (jmax * imax, 0);
 
-  area_depth = TNT::Array2D<double> (imax + 2, jmax + 2, 0.0);
 
 
   // Grain arrays - still to port
@@ -404,13 +325,14 @@ void LSDCatchmentModel::initialise_arrays()
 
   // Distributed Hydrological Model Arrays
   // j and jo need a very small initial value to get them going
-  j = std::vector<double> (rfnum + 1, 0.000000001);
+  /*  j = std::vector<double> (rfnum + 1, 0.000000001);
   jo = std::vector<double> (rfnum + 1, 0.000000001);
   j_mean = std::vector<double> (rfnum + 1);
   // std::vectors will be default initalised to 0, unless specified
   old_j_mean = std::vector<double> (rfnum + 1);
-  new_j_mean = std::vector<double> (rfnum + 1);
+  new_j_mean = std::vector<double> (rfnum + 1);*/
   rfarea = TNT::Array2D<int> (imax + 2, jmax + 2, 0);
+ 
   nActualGridCells = std::vector<int> (rfnum + 1);
   catchment_input_counter = std::vector<int> (rfnum + 1);
 
@@ -695,7 +617,7 @@ void Cell::initialise_grid_value_updates(const COORD_MAP& neighborhood)
 template<typename COORD_MAP>
 void Cell::update_water_depth(const COORD_MAP& neighborhood, double east_qx_old, double south_qy_old, double local_time_factor)
 {
-  water_depth = 0.001 + thisCell_old.water_depth + local_time_factor * ( (east_qx_old - thisCell_old.qx)/LSDCatchmentModel::DX + (south_qy_old - thisCell_old.qy)/LSDCatchmentModel::DY );
+  water_depth = 0.005 + thisCell_old.water_depth + local_time_factor * ( (east_qx_old - thisCell_old.qx)/LSDCatchmentModel::DX + (south_qy_old - thisCell_old.qy)/LSDCatchmentModel::DY );
 }
 
 
@@ -786,7 +708,7 @@ class CellInitializer : public LibGeoDecomp::SimpleInitializer<Cell>
 public:
   using LibGeoDecomp::SimpleInitializer<Cell>::gridDimensions; 
   
-  CellInitializer(LSDCatchmentModel *catchment_in, int nsteps) : LibGeoDecomp::SimpleInitializer<Cell>(LibGeoDecomp::Coord<2>(catchment_in->elev.dim2(), catchment_in->elev.dim1()), nsteps)
+  CellInitializer(LSDCatchmentModel *catchment_in) : LibGeoDecomp::SimpleInitializer<Cell>(LibGeoDecomp::Coord<2>(catchment_in->elev.dim2(), catchment_in->elev.dim1()), catchment_in->no_of_iterations)
   {
     catchment = catchment_in;
   }
@@ -794,6 +716,7 @@ public:
   void grid(LibGeoDecomp::GridBase<Cell, 2> *subgrid)
   {
     Cell::CellType celltype;
+    LibGeoDecomp::CoordBox<2> subgridBoundingBox = subgrid->boundingBox();
     
     for (int x=0; x<=catchment->jmax-1; x++)
       {
@@ -819,7 +742,12 @@ public:
 	      }
 	    
 	    LibGeoDecomp::Coord<2> coordinate(x, y);
-	    subgrid->set(coordinate, Cell(celltype, catchment->elev[y][x], catchment->water_depth[y][x], catchment->qx[y][x], catchment->qx[y][x]));
+	    
+	    // ensure each rank only initialises its subgrid
+	    if (subgridBoundingBox.inBounds(coordinate))
+	      {
+		subgrid->set(coordinate, Cell(celltype, catchment->elev[y][x], catchment->water_depth[y][x], 0.0, 0.0));
+	      }
 	  }
       }
   }
@@ -834,8 +762,7 @@ private:
 
 void LSDCatchmentModel::initialise_model_domain_extents()
 {
-  std::string FILENAME = read_path + "/" + read_fname + "."	\
-    + dem_read_extension;
+  std::string FILENAME = read_path + "/" + read_fname + "." + dem_read_extension;
   
   if (!does_file_exist(FILENAME))
     {
@@ -848,9 +775,6 @@ void LSDCatchmentModel::initialise_model_domain_extents()
   
   try
     {
-      std::cout << "\n\nLoading DEM header info, the filename is "
-		<< FILENAME << std::endl;
-      
       // open the data file
       std::ifstream data_in(FILENAME.c_str());
       
@@ -859,9 +783,7 @@ void LSDCatchmentModel::initialise_model_domain_extents()
       
       // read the georeferencing data and metadata
       data_in >> str >> jmax;
-      std::cout << "NCols: " << jmax << " str: " << std::endl;
       data_in >> str >> imax;
-      std::cout << "NRows: " << imax << " str: " << std::endl;
       data_in >> str >> xll
 	      >> str >> yll
 	      >> str >> LSDCatchmentModel::DX // cell size or grid resolution
@@ -889,7 +811,6 @@ void LSDCatchmentModel::check_DEM_edge_condition()
   std::cout << "Checking edge cells for suitable catchment outlet point..." << std::endl;
   //check for no_data_values on RH edge of DEM
   double temp = LSDCatchmentModel::no_data_value;
-  std::cout << temp << " " << imax << " " << jmax << std::endl;
   
   for (unsigned n = 0; n < jmax; n++)
     {
@@ -1005,12 +926,8 @@ void LSDCatchmentModel::initialise_variables(std::string pfname)
   infile.open(full_name.c_str());
   string parameter, value, lower, lower_val;
   string bc;
-  
-  if(LibGeoDecomp::MPILayer().rank() == 0)
-    {
-      std::cout << "Parameter filename is: " << full_name << std::endl;
-    }
 
+  
   // now ingest parameters
   while (infile.good())
   {
@@ -1033,7 +950,7 @@ void LSDCatchmentModel::initialise_variables(std::string pfname)
                               dem_read_extension);
       if(LibGeoDecomp::MPILayer().rank() == 0)
 	{
-	  std::cout << "dem_read_extension: " << dem_read_extension << std::endl;
+	  std::cout << "DEM file extension: " << dem_read_extension << std::endl;
 	} 
     }
     else if (lower == "dem_write_extension")
@@ -1079,7 +996,7 @@ void LSDCatchmentModel::initialise_variables(std::string pfname)
       read_fname = RemoveControlCharactersFromEndOfString(read_fname);
       if(LibGeoDecomp::MPILayer().rank() == 0)
 	{
-	  std::cout << "read_fname: " << read_fname << std::endl;
+	  std::cout << "DEM file name: " << read_fname << std::endl;
 	}
     }
     
@@ -1197,26 +1114,6 @@ void LSDCatchmentModel::initialise_variables(std::string pfname)
 	}
     }
 
-    else if (lower == "min_q_for_depth_calc")
-    {
-      MIN_Q = atof(value.c_str());
-      if(LibGeoDecomp::MPILayer().rank() == 0)
-	{
-	  std::cout << "minimum discharge for depth calculation: "
-		    << MIN_Q << std::endl;
-	}
-    }
-
-    else if (lower == "max_q_for_depth_calc")
-    {
-      MIN_Q_MAXVAL = atof(value.c_str());
-      if(LibGeoDecomp::MPILayer().rank() == 0)
-	{
-	  std::cout << "max discharge for depth calc: "
-		    << MIN_Q_MAXVAL << std::endl;
-	}
-    }
-
     else if (lower == "hflow_threshold")
     {
       LSDCatchmentModel::hflow_threshold = atof(value.c_str());
@@ -1308,29 +1205,33 @@ void LSDCatchmentModel::initialise_variables(std::string pfname)
     
     
     // Visualisation
-    else if (lower == "write_elevation_ppm")
+    else if (lower == "elevation_ppm")
       {
-	LSDCatchmentModel::write_elevation_ppm = (value == "yes") ? true : false;
+	LSDCatchmentModel::elevation_ppm = (value == "yes") ? true : false;
       }
-    else if (lower == "write_water_depth_ppm")
+    else if (lower == "water_depth_ppm")
       {
-	LSDCatchmentModel::write_water_depth_ppm = (value == "yes") ? true : false;
+	LSDCatchmentModel::water_depth_ppm = (value == "yes") ? true : false;
+      }
+    else if (lower == "elevation_ppm_interval")
+      {
+	LSDCatchmentModel::elevation_ppm_interval = atoi(value.c_str());
       }
     else if (lower == "water_depth_ppm_interval")
       {
 	LSDCatchmentModel::water_depth_ppm_interval = atoi(value.c_str());
       }
-    else if (lower == "write_water_depth_bov")
+    else if (lower == "water_depth_bov")
       {
-	LSDCatchmentModel::write_water_depth_bov = (value == "yes") ? true : false;
+	LSDCatchmentModel::water_depth_bov = (value == "yes") ? true : false;
       }
     else if (lower == "water_depth_bov_interval")
       {
 	LSDCatchmentModel::water_depth_bov_interval = atoi(value.c_str());
       }
-    else if (lower == "write_water_depth_visit")
+    else if (lower == "water_depth_visit")
       {
-	LSDCatchmentModel::write_water_depth_visit = (value == "yes") ? true : false;
+	LSDCatchmentModel::water_depth_visit = (value == "yes") ? true : false;
       }
     else if (lower == "water_depth_visit_interval")
       {
@@ -1369,54 +1270,72 @@ void LSDCatchmentModel::initialise_variables(std::string pfname)
 
 
 
-
-
 void runSimulation(std::string pfname)
 {
+  // Read model params on each rank (can replace with MPI_Bcast if overhead ever becomes too large)
+  LSDCatchmentModel *catchment = new LSDCatchmentModel(pfname); 
   
-  std::string initial_snapshot_name = "initial_snapshot";
-  std::string initial_snapshot_file = initial_snapshot_name + ".mpiio";
-  LSDCatchmentModel *catchment = new LSDCatchmentModel(pfname); // so we have model params available on each rank (MPI_Bcast if overhead too large)
-  
-  // Run one step serially to load input data, initialise grid, and write MPI-IO snapshot
+  // Read model domain extent from DEM file on rank 0
   if (LibGeoDecomp::MPILayer().rank() == 0)
     {
-      catchment->initialise_model_domain_extents(); 
-      catchment->initialise_arrays(); 
-      catchment->load_data();
-      CellInitializer *initialiser = new CellInitializer(catchment, 0);
-      LibGeoDecomp::SerialSimulator<Cell> init(initialiser);
-      
-      std::cout << "\n Generating initial MPI-IO snapshot...";
-      init.addWriter(new LibGeoDecomp::MPIIOWriter<Cell>("", 1, 1, MPI_COMM_SELF, MPI_CELL));
-      init.run();
-      std::cout << "done \n";
+      catchment->initialise_model_domain_extents();
     }
   
-  LibGeoDecomp::MPILayer().barrier();  // Make sure rank 0 has finished writing initial MPI IO snapshot
-  LibGeoDecomp::MPIIOInitializer<Cell> *mpiio_initialiser = new LibGeoDecomp::MPIIOInitializer<Cell>("00000.mpiio", MPI_CELL);
-  LibGeoDecomp::MPILayer().barrier();
-  if( LibGeoDecomp::MPILayer().rank() == 0){ std::cout << "\n MPIIO snapshot loaded, initialising parallel simulation... \n\n"; }
+  // Broadcast model domain extent from rank 0 to all other ranks to allow each to initialise their arrays
+  MPI_Bcast(&catchment->imax, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&catchment->jmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  catchment->initialise_arrays();
+  
+  double elevation[catchment->imax][catchment->jmax];
+  
+  // Load terrain elevation data from DEM file on rank 0
+  if (LibGeoDecomp::MPILayer().rank() == 0)
+    {
+      catchment->load_data();
 
+      // Convert elev to standard 2D array of doubles
+      // This is to avoid having to define the MPI Typemap for a TNT::Array2D
+      for(int i=0; i<catchment->imax; i++)
+	{
+	  for(int j=0; j<catchment->jmax; j++)
+	    {
+	      elevation[i][j] = catchment->elev[i][j];
+	    }
+	}
+    }
+  
+  // Broadcast terrain elevation data to all processes
+  int bufferSize = catchment->imax * catchment->jmax;
+  MPI_Bcast(&elevation, bufferSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  
+  // Convert elevation back to TNT::Array2D and store in catchment object
+  for(int i=0; i<catchment->imax; i++)
+    {
+      for(int j=0; j<catchment->jmax; j++)
+	{
+	  catchment->elev[i][j] = elevation[i][j];
+	}
+    }
+  
+  
+  // Initialise grid (each rank initialises its own subgrid)
+  CellInitializer *initialiser = new CellInitializer(catchment);
 
+  // Set up simulator
   LibGeoDecomp::DistributedSimulator<Cell> *sim = 0;
   if(catchment->simulator == "striping")
     {
-      sim = new LibGeoDecomp::StripingSimulator<Cell>(mpiio_initialiser, LibGeoDecomp::MPILayer().rank()? 0 : new LibGeoDecomp::NoOpBalancer(), 1);
+      sim = new LibGeoDecomp::StripingSimulator<Cell>(initialiser, LibGeoDecomp::MPILayer().rank()? 0 : new LibGeoDecomp::NoOpBalancer(), 1);
     }
   else if(catchment->simulator == "hipar")
     {
-      sim = new LibGeoDecomp::HiParSimulator<Cell, LibGeoDecomp::RecursiveBisectionPartition<2> >(mpiio_initialiser, LibGeoDecomp::MPILayer().rank() ? 0 : new LibGeoDecomp::NoOpBalancer(), 1, 1);
+      sim = new LibGeoDecomp::HiParSimulator<Cell, LibGeoDecomp::RecursiveBisectionPartition<2> >(initialiser, LibGeoDecomp::MPILayer().rank() ? 0 : new LibGeoDecomp::NoOpBalancer(), 1, 1);
     }
-  
-  sim->setMaxSteps(catchment->no_of_iterations);
-  LibGeoDecomp::MPILayer().barrier();
-
   
   // Set up visualisation outputs  
   LibGeoDecomp::PPMWriter<Cell> *elevationPPMWriter = 0;
   LibGeoDecomp::PPMWriter<Cell> *water_depthPPMWriter = 0;
-  if(catchment->write_elevation_ppm)
+  if(catchment->elevation_ppm)
     {
       if(LibGeoDecomp::MPILayer().rank() == 0)
 	{
@@ -1424,8 +1343,10 @@ void runSimulation(std::string pfname)
 	  elevationPPMWriter = new LibGeoDecomp::PPMWriter<Cell>(&Cell::elevation, 0.0, 255.0, "elevation/ppm/elevation", \
 								 catchment->elevation_ppm_interval, LibGeoDecomp::Coord<2>(catchment->pixels_per_cell, catchment->pixels_per_cell));
 	}
+      LibGeoDecomp::CollectingWriter<Cell> *elevationPPMCollectingWriter = new LibGeoDecomp::CollectingWriter<Cell>(elevationPPMWriter);
+      sim->addWriter(elevationPPMCollectingWriter);
     }
-  if(catchment->write_water_depth_ppm)
+  if(catchment->water_depth_ppm)
     {
       if(LibGeoDecomp::MPILayer().rank() == 0)
 	{
@@ -1436,19 +1357,19 @@ void runSimulation(std::string pfname)
       LibGeoDecomp::CollectingWriter<Cell> *water_depthPPMCollectingWriter = new LibGeoDecomp::CollectingWriter<Cell>(water_depthPPMWriter);
       sim->addWriter(water_depthPPMCollectingWriter);
     }
-  if(catchment->write_water_depth_bov)
+  if(catchment->water_depth_bov)
     {
       system("mkdir -p water_depth/bov");
       sim->addWriter(new LibGeoDecomp::BOVWriter<Cell>(LibGeoDecomp::Selector<Cell>(&Cell::water_depth, "water_depth"), "water_depth/bov/water_depth", \
 						      catchment->water_depth_bov_interval));
     }
-  
-  
+
+  // Write out simulation progress
   if (LibGeoDecomp::MPILayer().rank() == 0){ sim->addWriter(new LibGeoDecomp::TracingWriter<Cell>(1, catchment->no_of_iterations)); }
-  
+
+  if( LibGeoDecomp::MPILayer().rank() == 0){ std::cout << "\nStarting parallel simulation... \n\n"; }
   sim->run();
       
   LibGeoDecomp::MPILayer().barrier(); 
-  
 }
 

@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
   
   if(LibGeoDecomp::MPILayer().rank() == 0)
     {
-      std::cout << " The parameter file is: " << pfname << std::endl;  
+      std::cout << "Parameter file is: " << pfname << std::endl;  
     }
     
   runSimulation(pfname);
